@@ -296,7 +296,7 @@ public class Blackscholes {
 	    
 	    try{
 	    	
-	    	FileReader reader = new FileReader(inputFile);
+	    	FileReader reader = new FileReader("test_cases/" + inputFile);
 	    	BufferedReader file = new BufferedReader(reader);
 	    	
 	    	String[] fields = {"s", "strike", "r", "divq", "v", "t", 
