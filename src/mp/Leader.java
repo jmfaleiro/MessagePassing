@@ -12,6 +12,15 @@ public class Leader{
 	private JSONArray sharedState[][];
 	private int numNodes;
 	
+	
+	private class WaitPair{
+		
+		public int sender;
+		public int receiver;
+	};
+	
+	
+	
 	Server server;
 	
 	public Leader(int n){
@@ -38,6 +47,7 @@ public class Leader{
 				
 				
 				JSONObject ret = new JSONObject();
+				boolean sendRet = true;
 				if (object instanceof JSONObject){
 					
 					
@@ -49,17 +59,17 @@ public class Leader{
 							
 							JSONObject message = (JSONObject)((JSONObject)object).get("message");
 							sendMessage(sender, receiver, message);
-							ret.put("Message", "Success!");
+							ret.put("message", "Success!");
 						}
 						catch(Exception e){
 							
-							ret.put("Error", "Malformed send request");
+							ret.put("error", "Malformed send request");
 						}
 						
 						
 					}
 					
-					else if(((JSONObject) object).containsKey("receive")){
+					else if(((JSONObject) object).containsKey("receive")) {
 						
 						try{
 							int sender = (Integer)((JSONObject) object).get("sender");
@@ -67,12 +77,15 @@ public class Leader{
 							
 							JSONObject toReturn = receiveMessage(sender, receiver);
 							
-							ret.put("Message", toReturn); 
+							ret.put("message", toReturn); 
 						}
 						catch(Exception e){
 							
-							ret.put("Error", "Malformed receive request");
+							ret.put("error", "Malformed receive request");
 						}
+					}
+					else{
+						ret.put("Error", "Couldn't understand request");
 					}
 				}
 				else{

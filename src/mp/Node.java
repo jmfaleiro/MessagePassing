@@ -143,6 +143,17 @@ public class Node{
 		return sendRequest(toSend);
 	}
 	
+	public JSONObject blockingReceive (int fromNode) throws MessageFailure {
+		
+		JSONObject reply = receiveMessage(fromNode);
+		
+		while (reply.get("message") == null)
+			reply = receiveMessage(fromNode);
+		
+		return reply;
+		
+	}
+	
 	public JSONObject receiveMessage(int fromNode) throws MessageFailure{
 		
 		

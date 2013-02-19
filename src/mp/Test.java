@@ -13,11 +13,13 @@ public class Test {
 		JSONObject toSend = new JSONObject();
 		toSend.put("Hi", "From node 0");
 		
-		JSONObject ret0 = c0.sendMessage(1,  toSend);
+		//JSONObject ret0 = c0.sendMessage(1,  toSend);
 		
-		System.out.println(ret0.toJSONString());
+		//System.out.println(ret0.toJSONString());
 		
-		JSONObject ret1 = c1.receiveMessage(0);
-		System.out.println(ret1.toJSONString());
+		JSONObject ret1 = c1.blockingReceive(0);
+		
+		//JSONObject ret0 = c0.sendMessage(1,  toSend);
+		
 	}
 }
