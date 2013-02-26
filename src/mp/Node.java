@@ -143,12 +143,14 @@ public class Node{
 		return sendRequest(toSend);
 	}
 	
-	public JSONObject blockingReceive (int fromNode) throws MessageFailure {
+	public JSONObject blockingReceive (int fromNode) throws MessageFailure, InterruptedException {
 		
 		JSONObject reply = receiveMessage(fromNode);
 		
-		while (reply.get("message") == null)
+		while (reply.get("message") == null){
+			Thread.sleep(500);
 			reply = receiveMessage(fromNode);
+		}
 		
 		return reply;
 		

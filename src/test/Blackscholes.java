@@ -176,7 +176,7 @@ public class Blackscholes {
 			try{
 				Blackscholes.driver(id);
 			}
-			catch(mp.MessageFailure e){
+			catch(Exception e){
 				
 				System.out.println(e.toString());
 			}
@@ -185,7 +185,7 @@ public class Blackscholes {
 		
 	};
 	
-	public static void driver(int id) throws mp.MessageFailure{
+	public static void driver(int id) throws mp.MessageFailure, InterruptedException{
 		
 		double price;
 		int start = id * (numOptions / nThreads);
