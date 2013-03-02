@@ -40,7 +40,7 @@ public class Leader{
 		Registration.registerClasses(server.getKryo());
 		server.addListener(new Listener(){
 			
-			public void received(Connection connection, Object object) {
+			public void received(Connection connection, Object objectString) {
 				
 				System.out.println("Got a new request!");
 				
@@ -48,8 +48,10 @@ public class Leader{
 				
 				JSONObject ret = new JSONObject();
 				boolean sendRet = true;
-				if (object instanceof JSONObject){
+				if (objectString instanceof String){
 					
+					Object toConvert = JSONValue.parse((String)objectString);
+					JSONObject object = (JSONObject)toConvert;
 					
 					if (((JSONObject) object).containsKey("send")){
 						
