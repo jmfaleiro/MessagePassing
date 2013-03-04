@@ -56,8 +56,12 @@ public class Leader{
 					if (((JSONObject) object).containsKey("send")){
 						
 						try{
-							int sender = (Integer)((JSONObject) object).get("sender");
-							int receiver = (Integer)((JSONObject) object).get("receiver");
+							long sender_long = (Long)((JSONObject) object).get("sender");
+							long receiver_long = (Long)((JSONObject) object).get("receiver");
+							
+							int sender = (int)sender_long;
+							int receiver = (int)receiver_long;
+							
 							
 							JSONObject message = (JSONObject)((JSONObject)object).get("message");
 							sendMessage(sender, receiver, message);
@@ -74,8 +78,11 @@ public class Leader{
 					else if(((JSONObject) object).containsKey("receive")) {
 						
 						try{
-							int sender = (Integer)((JSONObject) object).get("sender");
-							int receiver = (Integer)((JSONObject) object).get("receiver");
+							long sender_long = (Long)((JSONObject) object).get("sender");
+							long receiver_long = (Long)((JSONObject) object).get("receiver");
+							
+							int sender = (int)sender_long;
+							int receiver = (int)receiver_long;
 							
 							JSONObject toReturn = receiveMessage(sender, receiver);
 							
@@ -94,7 +101,7 @@ public class Leader{
 					ret.put("Error", "Couldn't understand request");
 				}
 				
-				connection.sendTCP(ret);
+				connection.sendTCP(ret.toJSONString());
 			
 			}
 			

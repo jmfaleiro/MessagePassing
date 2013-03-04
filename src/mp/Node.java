@@ -37,9 +37,10 @@ public class Node{
 			public void received(Connection connection, Object object){
 				
 				JSONObject ret;
-				if (object instanceof JSONObject){
+				if (object instanceof String){
 					
-					ret = (JSONObject)object;
+					Object blah = JSONValue.parse((String)object);
+					ret = (JSONObject)blah;
 				}
 				else{
 					
@@ -98,14 +99,14 @@ public class Node{
 	private synchronized JSONObject sendRequest(JSONObject obj) throws MessageFailure{
 		
 		int tryCount = 0;
-		
+		String objString = obj.toJSONString();
 		while (tryCount++ < numRetries){
 			
 			try{
 				
 				client.start();
 				client.connect(Node.connectionTimeout, "localhost", 29188);
-				client.sendTCP(obj);
+				client.sendTCP(objString);
 				break;
 			}
 			catch(IOException e){

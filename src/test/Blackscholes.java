@@ -231,8 +231,11 @@ public class Blackscholes {
 				int end_i = start_i + (numOptions/nThreads);
 				
 				try{
-					for(; start_i < end_i; ++start_i)
-						results[start_i] = (java.lang.Double) message.get(start_i);
+					for(; start_i < end_i; ++start_i) {
+						
+						
+						results[start_i] = (java.lang.Double)message.get(Integer.toString(start_i));
+					}
 				}
 				catch(Exception e){
 					System.out.println("blah");
