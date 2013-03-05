@@ -7,11 +7,14 @@ import com.esotericsoftware.kryonet.*;
 
 import org.json.simple.*;
 
+import java.nio.*;
 
+
+import java.nio.*;
 public class Registration {
 
 	
-		private static Class[] toRegister = { JSONObject.class,  String.class };
+		private static Class[] toRegister = { byte[].class, JSONObject.class };
 		
 		public static void registerClasses(Kryo k){
 			

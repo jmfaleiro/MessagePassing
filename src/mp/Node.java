@@ -5,15 +5,18 @@ import org.json.simple.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 
 
-public class Node{
+
+public class Node {
 	
 	private int m_totalNodes;
 	private int m_nodeId;
+	
+	private static int port = 44555;
 	
 	private Client client;
 	
@@ -23,7 +26,7 @@ public class Node{
 	private static int connectionTimeout = 10000;
 	private static int numRetries = 10;
 	
-	public Node(int totalNodes, int nodeId){
+	public Node(int totalNodes, int nodeId) {
 		
 		m_totalNodes = totalNodes;
 		m_nodeId = nodeId;
@@ -37,10 +40,14 @@ public class Node{
 			public void received(Connection connection, Object object){
 				
 				JSONObject ret;
-				if (object instanceof String){
+				if (object instanceof JSONObject){
 					
-					Object blah = JSONValue.parse((String)object);
-					ret = (JSONObject)blah;
+					/*
+					//String string_object = new String((byte [])object);
+					
+					Object blah = JSONValue.parse(string_object);
+					*/
+					ret = (JSONObject)object;
 				}
 				else{
 					
@@ -61,6 +68,8 @@ public class Node{
 		
 		done = true;
 		toReturn = ret;
+		
+		System.out.println("Received an object");
 		notify();
 	}
 	
@@ -99,14 +108,22 @@ public class Node{
 	private synchronized JSONObject sendRequest(JSONObject obj) throws MessageFailure{
 		
 		int tryCount = 0;
-		String objString = obj.toJSONString();
+		byte[] objString = null;
+		try {
+			objString = obj.toJSONString().getBytes("UTF-8");
+		}
+		catch(Exception e) {
+			
+			e.printStackTrace();
+			System.exit(-1);
+		}
 		while (tryCount++ < numRetries){
 			
 			try{
 				
 				client.start();
-				client.connect(Node.connectionTimeout, "localhost", 29188);
-				client.sendTCP(objString);
+				client.connect(Node.connectionTimeout, "localhost", port);
+				client.sendTCP(obj);
 				break;
 			}
 			catch(IOException e){
@@ -120,7 +137,7 @@ public class Node{
 			throw new MessageFailure("Exceeded number of retries");
 		}
 		
-		while(!done){
+		while(!done) {
 			
 			try{
 				wait();

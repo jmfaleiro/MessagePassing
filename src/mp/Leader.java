@@ -13,7 +13,7 @@ public class Leader{
 	private int numNodes;
 	
 	
-	private class WaitPair{
+	private class WaitPair {
 		
 		public int sender;
 		public int receiver;
@@ -23,7 +23,7 @@ public class Leader{
 	
 	Server server;
 	
-	public Leader(int n){
+	public Leader(int n) {
 		
 		numNodes = n;
 		sharedState = new JSONArray[n][];
@@ -40,15 +40,22 @@ public class Leader{
 		Registration.registerClasses(server.getKryo());
 		server.addListener(new Listener(){
 			
-			public void received(Connection connection, Object objectString) {
+			public void received(Connection connection, Object object_buffer) {
 				
 				System.out.println("Got a new request!");
 				
-				
-				
 				JSONObject ret = new JSONObject();
 				boolean sendRet = true;
-				if (objectString instanceof String){
+				if (object_buffer instanceof byte[]){
+					
+					String objectString = null;
+					try {
+						objectString = new String((byte[])object_buffer, "UTF-8");
+					}
+					catch(Exception e) {
+						
+						ret.put("error",  "Malformed send request");
+					}
 					
 					Object toConvert = JSONValue.parse((String)objectString);
 					JSONObject object = (JSONObject)toConvert;
@@ -101,7 +108,7 @@ public class Leader{
 					ret.put("Error", "Couldn't understand request");
 				}
 				
-				connection.sendTCP(ret.toJSONString());
+				connection.sendTCP(ret.toJSONString().getBytes());
 			
 			}
 			
@@ -111,7 +118,7 @@ public class Leader{
 		server.start();
 		try{
 			
-			server.bind(29188);
+			server.bind(44555);
 		}
 		
 		catch(IOException e){
