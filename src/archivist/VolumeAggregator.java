@@ -14,9 +14,9 @@ public class VolumeAggregator extends Aggregator{
 		private static int round_type = Calendar.HOUR;
 		private static SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss ZZZZZ yyyy", Locale.ENGLISH);
 		
-		public VolumeAggregator (int node_id) {
+		public VolumeAggregator (int node_id, int total_nodes) {
 			
-			super(node_id);
+			super(node_id, total_nodes);
 		}
 		
 		
@@ -45,7 +45,7 @@ public class VolumeAggregator extends Aggregator{
 				
 				// If the date is already in the dictionary, then get its value.
 				if (vals.containsKey(date_string)) {
-					count = (java.lang.Integer)vals.get("date_string");
+					count = (java.lang.Integer)vals.get(date_string);
 				}
 				
 				// Increment count and add it to the dictionary.

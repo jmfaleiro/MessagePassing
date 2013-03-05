@@ -20,7 +20,7 @@ public abstract class Aggregator {
 	
 	public abstract JSONObject Aggregate(JSONArray tweets, JSONObject dict);
 	
-	public Aggregator(int node_id) {
+	public Aggregator(int node_id, int total_nodes) {
 		
 		node = new mp.NodeNew(3, 1);
 	}
