@@ -11,7 +11,7 @@ public class VolumeAggregator extends Aggregator{
 
 		
 		
-		private static int round_type = Calendar.HOUR;
+		private static int round_type = Calendar.MINUTE;
 		private static SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss ZZZZZ yyyy", Locale.ENGLISH);
 		
 		public VolumeAggregator (int node_id, int total_nodes) {
