@@ -84,9 +84,8 @@ public class ShMemClient {
 		private int port;
 		
 		private Socket conx;
-		private InputStream in = null;
-		private OutputStream out = null;
-		private InputStreamReader reader;
+		private BufferedReader in = null;
+		private PrintWriter out = null;
 		
 		public ShMemThread(JSONArray args, String machine, int port){
 			
@@ -104,9 +103,8 @@ public class ShMemClient {
 				
 				try {
 					conx = new Socket(machine, port);
-					in = conx.getInputStream();
-					out = conx.getOutputStream();
-					reader = new InputStreamReader(in);
+					in = new BufferedReader(new InputStreamReader(conx.getInputStream()));
+					out = new PrintWriter(conx.getOutputStream(), true);
 					break;
 				}
 				catch (IOException e) {
@@ -127,9 +125,8 @@ public class ShMemClient {
 			JSONObject ret = null;
 			
 			try {
-				
-				out.write(to_send.toJSONString().getBytes());
-				ret = (JSONObject)parser.parse(reader);
+				out.println(to_send.toJSONString());
+				ret = (JSONObject)parser.parse(in.readLine());
 			}
 			catch(Exception e){
 				
@@ -143,6 +140,15 @@ public class ShMemClient {
 				
 				System.out.println("Fork failure!");
 				System.exit(-1);
+			}
+			
+			try {
+				out.close();
+				in.close();
+				conx.close();
+			}
+			catch(IOException e) {
+				
 			}
 		}
 
@@ -170,17 +176,18 @@ public class ShMemClient {
 		}
 		
 		int parent_len = parent.size();
-		JSONObject parent_state = (JSONObject)parent.get(parent_len-1);
-		
 		int child_len = child.size();
-		JSONObject child_state = (JSONObject)child.get(child_len-1);
 		
 		if (child_len != parent_len) {
 			
 			throw new ShMemFailure("Child version number does not match parent's version!");
 		}
 		
-		parent_state.putAll(child_state);
+		if (parent_len > 0) {
+			JSONObject parent_state = (JSONObject)parent.get(parent_len-1);
+			JSONObject child_state = (JSONObject)child.get(child_len-1);
+			parent_state.putAll(child_state);
+		}
 		return parent;
 	}
 	

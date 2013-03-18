@@ -17,10 +17,13 @@ public class Test {
 		ShMemServer server = new ShMemServer(proc, 0);
 		server.start();
 		
+		
 		ShMemClient client = new ShMemClient(arg, 0);
 		
 		client.Fork();
 		JSONArray blah = client.Merge(arg);
 		System.out.println("Pass!");
+		
+		
 	}
 }

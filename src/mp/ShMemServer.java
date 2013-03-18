@@ -7,6 +7,7 @@ import org.json.simple.parser.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 
 import org.apache.commons.lang3.tuple.*;
@@ -24,10 +25,20 @@ public class ShMemServer implements Runnable {
 	private IProcess my_process; 
 	
 	private Thread thread;
+	private Semaphore initialized;
 	
 	public ShMemServer(IProcess process, int id) {
 		
 		my_process = process;
+		initialized = new Semaphore(1);
+		
+		try {
+			initialized.acquire();
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
     	
     	try {
     		
@@ -44,6 +55,13 @@ public class ShMemServer implements Runnable {
 		
 		thread = new Thread(this);
 		thread.start();
+		try {
+			initialized.acquire();
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
 	}
 	
 	public void run() {
@@ -55,15 +73,17 @@ public class ShMemServer implements Runnable {
 			
 			// State associated with a client connection. 
 			Socket client_socket = null;
-			InputStream in = null;
-			OutputStream out = null;
+			BufferedReader in = null;
+			PrintWriter out = null;
 			JSONObject ret = null;
 			
-			// Wait for a client to connect and initialize the input and ouput streams.
+			// Wait for a client to connect and initialize the input and output streams.
 			try {
+				initialized.release();
 				client_socket = server.accept();
-				in = client_socket.getInputStream();
-				out = client_socket.getOutputStream();
+				
+				in = new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
+				out = new PrintWriter(client_socket.getOutputStream(), true);
 			}
 			// If we see an error, it's probably our fault. Quit immediately. 
 			catch(IOException e) {
@@ -71,13 +91,14 @@ public class ShMemServer implements Runnable {
 				System.exit(-1);
 			}
 			
+			
+			
 			// Try to parse out a JSON argument from the contents of the request. 
 			JSONParser parser = new JSONParser();
 			
-			InputStreamReader reader = new InputStreamReader(in);
 			JSONObject arg = null;
 			try {
-				arg = (JSONObject)parser.parse(reader);
+				arg = (JSONObject)parser.parse(in.readLine());
 			}
 			// IOException should just quit immediately, debug this..
 			catch(IOException e) {
@@ -90,7 +111,7 @@ public class ShMemServer implements Runnable {
 			}
 			
 			
-			if (ret != null) {
+			if (ret == null) {
 				// Try to parse out a versioned object - which we encode as a JSONArray -
 				// from the client's request. If it succeeds, call "process", otherwise, 
 				// communicate failure to the client. 
@@ -112,7 +133,7 @@ public class ShMemServer implements Runnable {
 			
 			try {
 				// Give the result back to the client.
-				out.write(ret.toJSONString().getBytes());
+				out.println(ret.toJSONString());
 				
 				// Do some cleanup. 
 				in.close();
@@ -121,8 +142,7 @@ public class ShMemServer implements Runnable {
 				client_socket = null;
 			}
 			catch (IOException e) {
-				e.printStackTrace();
-				System.exit(-1);
+				
 			}
 		}
 	
