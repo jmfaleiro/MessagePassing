@@ -11,6 +11,7 @@ public class Test {
 		
 		// Create an empty array and the super simple process. 
 		JSONArray arg = new JSONArray();
+		arg.add(new JSONObject());
 		SimpleProcess proc = new SimpleProcess();
 		
 		// Create a client and server. 
@@ -22,8 +23,6 @@ public class Test {
 		
 		client.fork();
 		JSONArray blah = client.merge(arg);
-		System.out.println("Pass!");
-		
-		
+		System.out.println(((JSONObject)blah.get(0)).toJSONString());
 	}
 }

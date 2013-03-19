@@ -187,7 +187,7 @@ public class Blackscholes {
 		
 		for (int i = 0; i < numOptions; ++i) {
 			
-			results[i] = (Double)(((JSONObject)arguments.get(0)).get(i));
+			results[i] = (Double)(((JSONObject)arguments.get(0)).get(Integer.toString(i)));
 		}
 	}
 	

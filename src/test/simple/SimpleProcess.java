@@ -15,6 +15,7 @@ public class SimpleProcess implements IProcess{
 	public JSONObject process(JSONArray jobj) {
 		
 		JSONObject ret = new JSONObject();
+		ret.put("this",  "works");
 		return ret;
 	}
 
