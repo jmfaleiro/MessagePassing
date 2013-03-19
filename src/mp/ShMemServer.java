@@ -117,7 +117,7 @@ public class ShMemServer implements Runnable {
 				// communicate failure to the client. 
 				try {
 					JSONArray versioned_argument = (JSONArray)arg.get("argument");
-					JSONArray versioned_reply = my_process.process(versioned_argument);
+					JSONObject versioned_reply = my_process.process(versioned_argument);
 					
 					ret = new JSONObject();
 					ret.put("success",  1);

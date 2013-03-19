@@ -20,8 +20,8 @@ public class Test {
 		
 		ShMemClient client = new ShMemClient(arg, 0);
 		
-		client.Fork();
-		JSONArray blah = client.Merge(arg);
+		client.fork();
+		JSONArray blah = client.merge(arg);
 		System.out.println("Pass!");
 		
 		

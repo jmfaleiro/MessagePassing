@@ -7,9 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.*;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import org.json.simple.*;
+import org.json.simple.parser.*;
 
+import mp.*;
 
 public class Blackscholes {
 	
@@ -162,205 +163,48 @@ public class Blackscholes {
 		return OptionPrice;
 	}
 	
-	private static class BSThread implements Runnable {
-
-		private int id;
-		public BSThread(int given_id){
+	public static void runParallel(String input_file) throws InterruptedException, ParseException, ShMemFailure {
+		
+		ShMemServer[] slaves = new ShMemServer[nThreads];
+		ShMemClient[] clients = new ShMemClient[nThreads];
+		
+		JSONArray arguments = new JSONArray();
+		JSONObject empty_object = new JSONObject();
+		arguments.add(empty_object);
+		
+		for (int i = 0; i < nThreads; ++i) {
+			BlackscholesProcess p = new BlackscholesProcess(input_file, i, nThreads);
+			slaves[i] = new ShMemServer(p, i);
+			slaves[i].start();
 			
-			id = given_id;
+			clients[i] = new ShMemClient(arguments, i);
+			clients[i].fork();
 		}
 		
-		
-		public void run() {
-			
-			try{
-				Blackscholes.driver(id);
-			}
-			catch(mp.ShMemFailure e){
-				
-				System.out.println(e.toString());
-			}
+		for (int i = 0; i < nThreads; ++i) {
+			clients[i].merge(arguments);
 		}
 		
-		
-	};
-	
-	public static void driver(int id) throws mp.ShMemFailure{
-		
-		double price;
-		int start = id * (numOptions / nThreads);
-		int end = start + (numOptions / nThreads);
-		
-		mp.Node n = new mp.Node(nThreads, id);
-		
-		// We treat id 0 as the leader. All other nodes send their results
-		// to this node. 
-		
-		JSONObject p = new JSONObject();
-		for(int i = start; i < end; ++i){
-					
-			price = BlkSchlsEqEuroNoDiv(data[i].s, data[i].strike,
-										data[i].r, data[i].v, data[i].t, data[i].OptionType,
-							  			0);
+		for (int i = 0; i < numOptions; ++i) {
 			
-			if (id != 0){
-				
-				p.put(i, price);
-			}
-			
-			else {
-				
-				results[i] = price;
-			}
-		}
-		// If you're a slave, send your results to the master.
-		if (id != 0){
-			
-			n.sendMessage(0,  p);
-		}
-		// Wait for the results of each slave and incorporate them in
-		// in the results array.
-		else {
-			
-			for(int i = 1; i < nThreads; ++i){
-				
-				JSONObject r = n.blockingReceive(i);
-				JSONObject message = (JSONObject)r.get("message");
-				
-				int start_i = i * (numOptions/nThreads);
-				int end_i = start_i + (numOptions/nThreads);
-				
-				try{
-					for(; start_i < end_i; ++start_i) {
-						
-						
-						results[start_i] = (java.lang.Double)message.get(Integer.toString(start_i));
-					}
-				}
-				catch(Exception e){
-					System.out.println("blah");
-				}
-			}
+			results[i] = (Double)(((JSONObject)arguments.get(0)).get(i));
 		}
 	}
 	
-	
-	public static void runSerial(){
-		
-		double price;
-		for(int j = 0; j < numOptions; ++j){
-			
-				
-			price = BlkSchlsEqEuroNoDiv(data[j].s, data[j].strike,
-				  		data[j].r, data[j].v, data[j].t, data[j].OptionType,
-				  		0);
-			results[j] = price;
-		
-		}
-	}
-	
-	
-	
-	public static void runParallel() throws InterruptedException{
-		
-		Thread threads[] = new Thread[nThreads];
-		
-		mp.Leader server = new mp.Leader(nThreads);
-		
-		for(int i = 0; i < nThreads; ++i){
-			
-			threads[i] = new Thread(new BSThread(i));
-			threads[i].start();
-		}
-		
-		threads[0].join();
-	}
-	
-	public static void main(String[] args) throws InterruptedException{
+	public static void main(String[] args) throws InterruptedException, ShMemFailure, ParseException {
 		
 	    nThreads = Integer.parseInt(args[0]); 
-	    String inputFile = args[1];
-	    String outputFile = args[2];
-	    boolean serial = false;
+	    numOptions = Integer.parseInt(args[1]);
+	    String inputFile = args[2];
+	    String output_file = args[3];
 	    
-	    if(args[3].startsWith("serial")){
-	    	
-	    	serial = true;
-	    }
-	    
-	    if(serial){
-	    	outputFile = outputFile + "-serial.txt";
-	    }
-	    else{
-	    	outputFile = outputFile + "-parallel.txt";
-	    }
+	    output_file = output_file + "-parallel.txt";
 	   
-	    //Read input data from file
-	    
-	    try{
-	    	
-	    	FileReader reader = new FileReader("test_cases/" + inputFile);
-	    	BufferedReader file = new BufferedReader(reader);
-	    	
-	    	String[] fields = {"s", "strike", "r", "divq", "v", "t", 
-	    						"OptionType", "divs", "DGrefval" };
-	    	
-	    	
-	    	numOptions = Integer.parseInt(file.readLine());
-	    	
-	    	Blackscholes.data = new OptionData[numOptions];
-	    	
-	    	
-	    	for(int j = 0; j < numOptions; ++j){
-	    		
-	    		String line = file.readLine();
-	    		String parts[] = line.split(" ");
-	    		
-	    		if (parts.length != 9){
-	    			
-	    			
-	    			Exception toThrow = new Exception("Bad line in input file");
-	    			throw toThrow;
-	    		}
-	    		
-	    		
-	    		Blackscholes.data[j] = new OptionData();
-
-	    		Blackscholes.data[j] = new OptionData();
-	    		Blackscholes.data[j].s = Double.parseDouble(parts[0]);
-	    		Blackscholes.data[j].strike = Double.parseDouble(parts[1]);
-	    		Blackscholes.data[j].r = Double.parseDouble(parts[2]);
-	    		Blackscholes.data[j].divq = Double.parseDouble(parts[3]);
-	    		Blackscholes.data[j].v = Double.parseDouble(parts[4]);
-	    		Blackscholes.data[j].t = Double.parseDouble(parts[5]);
-	    		Blackscholes.data[j].OptionType = parts[6].charAt(0);
-	    		Blackscholes.data[j].divs = Double.parseDouble(parts[7]);
-	    		Blackscholes.data[j].DGrefval = Double.parseDouble(parts[8]);
-	    		
-	    	}
-	    	file.close();
-    		reader.close();
-	    }
-	    catch(Exception e){
-	    	
-	    	System.out.println(e.toString());
-	    	return;
-	    }
-	    
 	    Blackscholes.results = new double[numOptions];
-	    
-	    if (serial){
-	    	
-	    	runSerial();
-	    }
-	    else{
-	    	
-	    	runParallel();
-	    }
-	    
+	    runParallel(inputFile);
 	    
 	    try{
-	    	FileWriter file = new FileWriter(outputFile);
+	    	FileWriter file = new FileWriter(output_file);
 	    	BufferedWriter writer = new BufferedWriter(file);
 	    	
 	    	

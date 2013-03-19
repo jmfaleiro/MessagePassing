@@ -18,7 +18,7 @@ public class ShMemClient {
 	public static Map<Integer, Pair<String, Integer>> addresses;
 
 	private JSONArray reference;
-	private JSONArray child;
+	private JSONObject child;
 	private int slave;
 	private JSONParser parser;
 	private ShMemThread thread;
@@ -71,7 +71,7 @@ public class ShMemClient {
 	// Wrapper for creating a new thread and spawning it off with fork arguments
 	// the background.
 	//
-	public void Fork() throws ShMemFailure{
+	public void fork() throws ShMemFailure{
 		
 		this.thread_wrapper = new Thread(thread);
 		this.thread_wrapper.start();
@@ -134,7 +134,7 @@ public class ShMemClient {
 			}
 			
 			if (ret.containsKey("success")) {
-				child = (JSONArray)ret.get("response");
+				child = (JSONObject)ret.get("response");
 			}
 			else {
 				
@@ -164,7 +164,7 @@ public class ShMemClient {
 	// Do a super simple merge. We just check that for every *new* key in the 
 	// child. 
 	//
-	public synchronized JSONArray Merge(JSONArray parent) throws ShMemFailure{
+	public synchronized JSONArray merge(JSONArray parent) throws ShMemFailure{
 		
 		try {
 			thread_wrapper.join();
@@ -175,18 +175,22 @@ public class ShMemClient {
 			System.exit(-1);
 		}
 		
-		int parent_len = parent.size();
-		int child_len = child.size();
 		
-		if (child_len != parent_len) {
-			
-			throw new ShMemFailure("Child version number does not match parent's version!");
-		}
+		int parent_len = parent.size();
 		
 		if (parent_len > 0) {
 			JSONObject parent_state = (JSONObject)parent.get(parent_len-1);
-			JSONObject child_state = (JSONObject)child.get(child_len-1);
-			parent_state.putAll(child_state);
+			
+			// First check that the key cannot possibly conflict with anything in the parent. 
+			for (Object key : child.keySet()) {
+				
+				if (parent_state.containsKey(key)) {
+					throw new ShMemFailure("Trying to merge a key that already exists!");
+				}
+			}
+			
+			// Put all the keys in the child into the parent. 
+			parent_state.putAll(child);
 		}
 		return parent;
 	}

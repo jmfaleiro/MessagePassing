@@ -1,6 +1,6 @@
 package test.simple;
 
-import org.json.simple.JSONArray;
+import org.json.simple.*;
 
 import mp.*;
 
@@ -12,9 +12,10 @@ import mp.*;
 public class SimpleProcess implements IProcess{
 
 	// Just return the argument. 
-	public JSONArray process(JSONArray jobj) {
+	public JSONObject process(JSONArray jobj) {
 		
-		return jobj;
+		JSONObject ret = new JSONObject();
+		return ret;
 	}
 
 }

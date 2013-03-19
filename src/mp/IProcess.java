@@ -4,5 +4,5 @@ import org.json.simple.*;
 
 public interface IProcess {
 
-	JSONArray process(JSONArray jobj);
+	JSONObject process(JSONArray jobj);
 }
