@@ -12,6 +12,7 @@ import mp.*;
 public class SimpleProcess implements IProcess{
 
 	// Just return the argument. 
+	@SuppressWarnings("unchecked")
 	public JSONObject process(JSONArray jobj) {
 		
 		JSONObject ret = new JSONObject();

@@ -19,7 +19,6 @@ public class ShMemClient {
 
 	private JSONArray reference;
 	private JSONObject child;
-	private int slave;
 	private JSONParser parser;
 	private ShMemThread thread;
 	private Thread thread_wrapper;
@@ -56,7 +55,6 @@ public class ShMemClient {
 		
 		parser = new JSONParser();
 		this.reference = (JSONArray) parser.parse(state.toJSONString());
-		this.slave = slave;
 		Pair<String, Integer> address = addresses.get(slave);
 		
 		if (address == null) {
@@ -116,10 +114,11 @@ public class ShMemClient {
 		//
 		// Do the actual fork. 
 		//
+		@SuppressWarnings("unchecked")
 		private void Fork() {
+			
 			JSONObject to_send = new JSONObject();
 			to_send.put("argument", args);
-			
 			
 			JSONParser parser = new JSONParser();
 			JSONObject ret = null;
@@ -164,6 +163,7 @@ public class ShMemClient {
 	// Do a super simple merge. We just check that for every *new* key in the 
 	// child. 
 	//
+	@SuppressWarnings("unchecked")
 	public synchronized JSONArray merge(JSONArray parent) throws ShMemFailure{
 		
 		try {

@@ -7,22 +7,30 @@ import org.json.simple.*;
 
 import org.apache.commons.lang3.time.*;
 
-public class VolumeAggregator extends Aggregator{
+import mp.*;
+
+public class VolumeAggregator implements IProcess{
 
 		
 		
 		private static int round_type = Calendar.MINUTE;
 		private static SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss ZZZZZ yyyy", Locale.ENGLISH);
 		
-		public VolumeAggregator (int node_id, int total_nodes) {
+		public VolumeAggregator () {
 			
-			super(node_id, total_nodes);
+			
 		}
-		
-		
-		public JSONObject Aggregate(JSONArray tweets, JSONObject vals) {
+
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public JSONObject process(JSONArray jobj) {
 			
-			// Iterate through the new tweets and update the data in the dictionary
+			int length = jobj.size();
+			// We expect that the caller will give us only new tweets. 
+			JSONArray tweets = (JSONArray)(((JSONObject)jobj.get(length-1)).get("tweets"));
+			JSONObject vals = (JSONObject)((JSONObject)jobj.get(length-2)).get("volume-aggregate");
+			
 			for (Object obj : tweets) {
 				
 				// Extract the date from the tweet
@@ -53,7 +61,10 @@ public class VolumeAggregator extends Aggregator{
 				vals.put(date_string,  count);
 			}
 			
-			return vals;
+			JSONObject ret = new JSONObject();
+			ret.put("volume-aggregate",  vals);
+			
+			return ret;
 		}
 	
 }

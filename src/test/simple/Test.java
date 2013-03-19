@@ -7,6 +7,7 @@ import org.json.simple.parser.*;
 
 public class Test {
 
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws ParseException, ShMemFailure{
 		
 		// Create an empty array and the super simple process. 

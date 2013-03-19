@@ -2,11 +2,7 @@ package test;
 
 
 import java.io.*;
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.json.*;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -16,7 +12,7 @@ public class Blackscholes {
 	
 	// Constants
 	private static double inv_sqrt_2xPI = 0.39894228040143270286;
-	private static int NUM_RUNS = 100;
+
 	private static int nThreads;
 	public static int numOptions;
 	
@@ -100,8 +96,7 @@ public class Blackscholes {
 		double OptionPrice;
 		
 		// local private working variables for the calculation
-		double xStockPrice;
-		double xStrikePrice;
+		
 		double xRiskFreeRate;
 		double xVolatility;
 		double xTime;
@@ -121,8 +116,7 @@ public class Blackscholes {
 		double NegNofXd1;
 		double NegNofXd2;    
 		
-		xStockPrice = sptprice;
-		xStrikePrice = strike;
+		
 		xRiskFreeRate = rate;
 		xVolatility = volatility;
 		
@@ -163,6 +157,7 @@ public class Blackscholes {
 		return OptionPrice;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public static void runParallel(String input_file) throws InterruptedException, ParseException, ShMemFailure {
 		
 		ShMemServer[] slaves = new ShMemServer[nThreads];

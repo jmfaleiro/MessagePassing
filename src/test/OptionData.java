@@ -1,6 +1,5 @@
 package test;
 
-import sun.misc.JavaAWTAccess;
 
 /*
  * Java Port of PARSEC's Blackscholes to use Deterministic
@@ -8,7 +7,7 @@ import sun.misc.JavaAWTAccess;
  * 
  */
 
-public class OptionData implements java.io.Serializable{
+public class OptionData{
 	
 	public double s;				// spot price
 	public double strike;			// strike price

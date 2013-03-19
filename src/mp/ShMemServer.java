@@ -6,7 +6,6 @@ import org.json.simple.parser.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 
@@ -64,6 +63,7 @@ public class ShMemServer implements Runnable {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void run() {
 		
 		// The service is not multi-threaded. The service should be stateless, so we 
@@ -148,6 +148,7 @@ public class ShMemServer implements Runnable {
 	
 	}
 	
+	@SuppressWarnings("unchecked")
 	private JSONObject failure_message() {
 		JSONObject ret = new JSONObject();
 		ret.put("failure",  1);
