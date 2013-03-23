@@ -1,3 +1,6 @@
 0 localhost 23188
 1 localhost 24188
 2 localhost 25188
+3 localhost 26188
+4 localhost 27188
+5 localhost 28188
