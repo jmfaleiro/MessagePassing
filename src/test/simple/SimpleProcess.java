@@ -13,11 +13,9 @@ public class SimpleProcess implements IProcess{
 
 	// Just return the argument. 
 	@SuppressWarnings("unchecked")
-	public JSONObject process(JSONArray jobj) {
+	public void process() {
 		
-		JSONObject ret = new JSONObject();
-		ret.put("this",  "works");
-		return ret;
+		ShMem.state.put("this", "works");
 	}
 
 }

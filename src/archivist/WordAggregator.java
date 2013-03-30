@@ -85,14 +85,12 @@ public class WordAggregator implements IProcess{
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public JSONObject process(JSONArray jobj) {
+	public void process() {
 		
-		int length = jobj.size();
-		
-		String search_term = (String)((JSONObject)jobj.get(length-1)).get("search_term");
+		String search_term = (String)ShMem.state.get("search_term");
 		// We expect that the caller will give us only new tweets. 
-		JSONArray tweets = (JSONArray)(((JSONObject)jobj.get(length-1)).get("tweets"));
-		JSONObject vals = (JSONObject)((JSONObject)jobj.get(length-2)).get("word-aggregate");
+		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
+		JSONObject vals = (JSONObject)ShMem.state.get("word-aggregate");
 		
 		List<String> exclude_words = get_excludes(search_term);
 		
@@ -104,12 +102,12 @@ public class WordAggregator implements IProcess{
 			String tweet_text = (String)tweet.get("text");
 			process_tweet(vals, tweet_text, exclude_words);
 		}
-		
-		JSONObject ret = new JSONObject();
-		ret.put("word-aggregate",  vals);
-		return ret;
 	}
 	
-	
-
+	public static void main(String [] args) {
+		
+		IProcess word_agg_proc = new WordAggregator();
+		ShMemServer s = new ShMemServer(word_agg_proc, 5);
+		s.start();
+	}
 }

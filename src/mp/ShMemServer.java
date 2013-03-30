@@ -41,7 +41,7 @@ public class ShMemServer implements Runnable {
     	
     	try {
     		
-    		Pair<String, Integer> my_address = ShMemClient.addresses.get(id);
+    		Pair<String, Integer> my_address = ShMem.addresses.get(id);
     		server = new ServerSocket(my_address.getRight());
     	}
     	catch (IOException e) {
@@ -116,12 +116,13 @@ public class ShMemServer implements Runnable {
 				// from the client's request. If it succeeds, call "process", otherwise, 
 				// communicate failure to the client. 
 				try {
-					JSONArray versioned_argument = (JSONArray)arg.get("argument");
-					JSONObject versioned_reply = my_process.process(versioned_argument);
+					JSONObject versioned_argument = (JSONObject)arg.get("argument");
+					ShMem.state = versioned_argument;
+					my_process.process();
 					
 					ret = new JSONObject();
 					ret.put("success",  1);
-					ret.put("response",  versioned_reply);
+					ret.put("response",  ShMem.state);
 				}
 				// We return a failure message in case we get "is alive" messages as well.
 				// All the client really needs is *some* response from the server, we don't
@@ -145,7 +146,6 @@ public class ShMemServer implements Runnable {
 				
 			}
 		}
-	
 	}
 	
 	@SuppressWarnings("unchecked")

@@ -6,20 +6,14 @@ import mp.*;
 
 public class UserAggregator implements IProcess {
 
-	
-	public JSONObject Aggregate(JSONArray tweets, JSONObject dict) {
-		
-		return dict;
-	}
-
 	@SuppressWarnings("unchecked")
 	@Override
-	public JSONObject process(JSONArray jobj) {
+	public void process() {
 		
-		int length = jobj.size();
+	
 		// We expect that the caller will give us only new tweets. 
-		JSONArray tweets = (JSONArray)(((JSONObject)jobj.get(length-1)).get("tweets"));
-		JSONObject vals = (JSONObject)((JSONObject)jobj.get(length-2)).get("user-aggregate");
+		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
+		JSONObject vals = (JSONObject)ShMem.state.get("user-aggregate");
 		
 		for (Object obj : tweets) {
 			
@@ -38,10 +32,13 @@ public class UserAggregator implements IProcess {
 			++count;
 			vals.put(username, count);
 		}
+	}
+	
+	public static void main(String [] args) {
 		
-		JSONObject ret = new JSONObject();
-		ret.put("user-aggregate",  vals);
 		
-		return ret;
+		IProcess user_agg_proc = new UserAggregator();
+		ShMemServer s = new ShMemServer(user_agg_proc, 3);
+		s.start();
 	}
 }

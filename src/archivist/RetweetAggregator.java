@@ -4,14 +4,13 @@ import org.json.simple.*;
 
 import mp.*;
 
-public class RetweetAggregator implements IProcess{
+public class RetweetAggregator implements IProcess {
 
-	public JSONObject process(JSONArray jobj) {
+	public void process() {
 		
-		int length = jobj.size();
 		// We expect that the caller will give us only new tweets. 
-		JSONArray tweets = (JSONArray)(((JSONObject)jobj.get(length-1)).get("tweets"));
-		long old_count = (Long)((JSONObject)jobj.get(length-2)).get("retweet-aggregate");
+		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
+		long old_count = (Long)ShMem.state.get("retweet-aggregate");
 		long count = 0;
 		
 		for (Object obj : tweets) {
@@ -22,10 +21,14 @@ public class RetweetAggregator implements IProcess{
 		}
 		
 		count += old_count;
+		ShMem.state.put("retweet-aggregate",  count);
+	}
+	
+	public static void main(String [] args) {
 		
-		JSONObject ret = new JSONObject();
-		ret.put("retweet-aggregate",  count);
 		
-		return ret;
+		IProcess rt_agg_proc = new RetweetAggregator();
+		ShMemServer s = new ShMemServer(rt_agg_proc, 0);
+		s.start();
 	}
 }

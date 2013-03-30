@@ -18,12 +18,11 @@ public class Test {
 		// Create a client and server. 
 		ShMemServer server = new ShMemServer(proc, 0);
 		server.start();
+		ShMem.state.put("key",  "value");
 		
-		
-		ShMemClient client = new ShMemClient(arg, 0);
-		
-		client.fork();
-		JSONArray blah = client.merge(arg);
-		System.out.println(((JSONObject)blah.get(0)).toJSONString());
+		ShMem client = ShMem.fork(0);
+		ShMem.state.put("jose",  "faleiro");
+		client.join();
+		System.out.println(ShMem.state.toJSONString());
 	}
 }

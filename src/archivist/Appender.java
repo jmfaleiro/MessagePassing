@@ -78,48 +78,44 @@ public class Appender {
 	
 		
 		// Add dummy state for volume and user aggregations to use. 
-		JSONObject first_iteration = new JSONObject();
+		
 		JSONObject empty = new JSONObject();
-		first_iteration.put("volume-aggregate",  empty);
-		first_iteration.put("user-aggregate",  empty);
-		first_iteration.put("word-aggregate",  empty);
-		first_iteration.put("url-aggregate",  empty);
-		first_iteration.put("source-aggregate",  empty);
-		first_iteration.put("retweet-aggregate",  0);
+		ShMem.state.put("volume-aggregate",  empty);
+		ShMem.state.put("user-aggregate",  empty);
+		ShMem.state.put("word-aggregate",  empty);
+		ShMem.state.put("url-aggregate",  empty);
+		ShMem.state.put("source-aggregate",  empty);
+		ShMem.state.put("retweet-aggregate",  0);
+		ShMem.state.put("tweets", tweets);
+		ShMem.state.put("search_term",  query_string);
 		
-		JSONObject second_iteration = new JSONObject();
-		second_iteration.put("tweets",  tweets);
-		second_iteration.put("search_term",  query_string);
+		ShMem retweet_aggregation = ShMem.fork(0);
+		ShMem source_aggregation = ShMem.fork(1);
+		ShMem url_aggregation = ShMem.fork(2);
+		ShMem user_aggregation = ShMem.fork(3);
+		ShMem volume_aggregation = ShMem.fork(4);
+		ShMem work_aggregation = ShMem.fork(5); 
 		
-		JSONArray versioned_state = new JSONArray();
-		versioned_state.add(first_iteration);
-		versioned_state.add(second_iteration);
+		retweet_aggregation.join();
+		ShMem.state.put("tweets",  tweets);
 		
-		ShMemClient volume_aggregation = new ShMemClient(versioned_state, 0);
-		volume_aggregation.fork();
+		source_aggregation.join();
+		ShMem.state.put("tweets", tweets);
+
+		url_aggregation.join();
+		ShMem.state.put("tweets", tweets);
 		
-		ShMemClient user_aggregation = new ShMemClient(versioned_state, 1);
-		user_aggregation.fork();
+		user_aggregation.join();
+		ShMem.state.put("tweets", tweets);
 		
-		ShMemClient word_aggregation = new ShMemClient(versioned_state, 2);
-		word_aggregation.fork();
+		volume_aggregation.join();
+		ShMem.state.put("tweets", tweets);
 		
-		ShMemClient url_aggregation = new ShMemClient(versioned_state, 3);
-		url_aggregation.fork();
+		work_aggregation.join();
+		ShMem.state.put("tweets", tweets);
 		
-		ShMemClient source_aggregation = new ShMemClient(versioned_state, 4);
-		source_aggregation.fork();
 		
-		ShMemClient retweet_aggregation = new ShMemClient(versioned_state, 5);
-		retweet_aggregation.fork();
-		
-		volume_aggregation.merge(versioned_state);
-		user_aggregation.merge(versioned_state);
-		word_aggregation.merge(versioned_state);
-		url_aggregation.merge(versioned_state);
-		source_aggregation.merge(versioned_state);
-		retweet_aggregation.merge(versioned_state);
-		
+		/*
 		int len = versioned_state.size();
 		JSONObject vol = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("volume-aggregate");
 		JSONObject use = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("user-aggregate");
@@ -127,42 +123,16 @@ public class Appender {
 		JSONObject urls = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("url-aggregate");
 		JSONObject sources = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("source-aggregate");
 		long rt_count = (Long)((JSONObject)versioned_state.get(len-1)).get("retweet-aggregate");
+		*/
 		return 0;
 	}
 	
 	
-	public static void main(String [] args) {
+	public static void main(String [] args) throws ShMemFailure, ParseException, TwitterException{
 		
 		Appender blah;
-		IProcess volume_proc = new VolumeAggregator();
-		IProcess user_proc = new UserAggregator();
-		IProcess word_proc = new WordAggregator();
-		IProcess url_proc = new UrlAggregator();
-		IProcess source_proc = new SourceAggregator();
-		IProcess retweet_proc = new RetweetAggregator();
 		
-		@SuppressWarnings("unused")
-		Aggregator volume_service = new Aggregator(0, volume_proc);
-		
-		@SuppressWarnings("unused")
-		Aggregator user_service = new Aggregator(1, user_proc);
-		
-		Aggregator word_service = new Aggregator(2, word_proc);
-		Aggregator url_service = new Aggregator(3, url_proc);
-		Aggregator source_service = new Aggregator(4, source_proc);
-		Aggregator retweet_service = new Aggregator(5, retweet_proc);
-		
-		try {
-			System.out.println("blah");
-			blah = new Appender("xbox");
-			blah.Search();
-		}
-		catch (Exception te) {
-            te.printStackTrace();
-            System.out.println("Failed to search tweets: " + te.getMessage());
-            System.exit(-1);
-		}
+		blah = new Appender("xbox"); 
+		blah.Search();
 	}
-	
-	
 }

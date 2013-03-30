@@ -91,7 +91,7 @@ public class Blackscholes {
 	
 	public static double BlkSchlsEqEuroNoDiv( double sptprice,
             		double strike, double rate, double volatility,
-            		double time, int otype, float timet )
+            		double time, long otype, float timet )
 	{
 		double OptionPrice;
 		
@@ -161,42 +161,98 @@ public class Blackscholes {
 	public static void runParallel(String input_file) throws InterruptedException, ParseException, ShMemFailure {
 		
 		ShMemServer[] slaves = new ShMemServer[nThreads];
-		ShMemClient[] clients = new ShMemClient[nThreads];
+		ShMem[] clients = new ShMem[nThreads];
 		
-		JSONArray arguments = new JSONArray();
-		JSONObject empty_object = new JSONObject();
-		arguments.add(empty_object);
 		
 		for (int i = 0; i < nThreads; ++i) {
-			BlackscholesProcess p = new BlackscholesProcess(input_file, i, nThreads);
+			/*
+			BlackscholesProcess p = new BlackscholesProcess();
 			slaves[i] = new ShMemServer(p, i);
 			slaves[i].start();
+			*/
 			
-			clients[i] = new ShMemClient(arguments, i);
-			clients[i].fork();
+			ShMem.state.put("num_threads",  nThreads);
+			ShMem.state.put("slave_number",  i);
+			clients[i] = ShMem.fork(i);
 		}
 		
 		for (int i = 0; i < nThreads; ++i) {
-			clients[i].merge(arguments);
+			clients[i].join();
 		}
 		
 		for (int i = 0; i < numOptions; ++i) {
 			
-			results[i] = (Double)(((JSONObject)arguments.get(0)).get(Integer.toString(i)));
+			results[i] = (Double)ShMem.state.get(Integer.toString(i));
 		}
+	}
+	
+	private static void parse_options(String input_file) {
+		
+		JSONArray data_add = new JSONArray();
+		JSONArray results_add = new JSONArray();
+		//Read input data from file
+	    try{
+	    	
+	    	FileReader reader = new FileReader("test_cases/" + input_file);
+	    	@SuppressWarnings("resource")
+			BufferedReader file = new BufferedReader(reader);
+	    	
+	    	int numOptions = Integer.parseInt(file.readLine());
+	    	
+	    	data = new OptionData[numOptions];
+	    	
+	    	for(int j = 0; j < numOptions; ++j){
+	    		
+	    		String line = file.readLine();
+	    		String parts[] = line.split(" ");
+	    		
+	    		if (parts.length != 9){
+	    			
+	    			Exception toThrow = new Exception("Bad line in input file");
+	    			throw toThrow;
+	    		}
+	    		
+	    		JSONObject data_value =  new JSONObject();
+	    		
+	    		data_value.put("s",  Double.parseDouble(parts[0]));
+	    		data_value.put("strike",  Double.parseDouble(parts[1]));
+	    		data_value.put("r",  Double.parseDouble(parts[2]));
+	    		data_value.put("divq",  Double.parseDouble(parts[3]));
+	    		data_value.put("v", Double.parseDouble(parts[4]));
+	    		data_value.put("t", Double.parseDouble(parts[5]));
+	    		data_value.put("OptionType",  Character.toString(parts[6].charAt(0)));
+	    		data_value.put("divs",  Double.parseDouble(parts[7]));
+	    		data_value.put("DGrefval", Double.parseDouble(parts[8]));
+	    		
+	    		data_add.add(data_value);
+	    		results_add.add(0);
+	    	}
+	    	
+	    	ShMem.state.put("data",  data_add);
+	    	ShMem.state.put("results",  results_add);
+	    	file.close();
+    		reader.close();
+	    }
+	    catch(Exception e){
+	    	
+	    	System.out.println(e.toString());
+	    	return;
+	    }
+		
 	}
 	
 	public static void main(String[] args) throws InterruptedException, ShMemFailure, ParseException {
 		
 	    nThreads = Integer.parseInt(args[0]); 
 	    numOptions = Integer.parseInt(args[1]);
-	    String inputFile = args[2];
+	    String input_file = args[2];
 	    String output_file = args[3];
 	    
 	    output_file = output_file + "-parallel.txt";
 	   
 	    Blackscholes.results = new double[numOptions];
-	    runParallel(inputFile);
+	    parse_options(input_file);
+	    runParallel(input_file);
 	    
 	    try{
 	    	FileWriter file = new FileWriter(output_file);

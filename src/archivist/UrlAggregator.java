@@ -22,16 +22,14 @@ public class UrlAggregator implements IProcess {
 		return ret;
 	}
 	
-	public JSONObject process(JSONArray jobj) {
+	public void process() {
 		
-		JSONObject ret = new JSONObject();
-		int length = jobj.size();
-		JSONArray tweets = (JSONArray)(((JSONObject)jobj.get(length-1)).get("tweets"));
-		JSONObject vals = (JSONObject)((JSONObject)jobj.get(length-2)).get("url-aggregate");
+		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
+		JSONObject vals = (JSONObject)ShMem.state.get("url-aggregate");
 		
 		for (Object obj : tweets) {
 			
-			String tweet_text = (String)((JSONObject)obj).get("text");
+			String tweet_text = new String((String)((JSONObject)obj).get("text"));
 			tweet_text = tweet_text.toUpperCase();
 			List<String> tweet_urls = get_urls(tweet_text);
 			
@@ -46,8 +44,13 @@ public class UrlAggregator implements IProcess {
 				vals.put(url,  count);
 			}
 		}
+	}
+	
+	public static void main(String [] args) {
 		
-		ret.put("url-aggregate",  vals);
-		return ret;
+		
+		IProcess url_agg_proc = new UrlAggregator();
+		ShMemServer s = new ShMemServer(url_agg_proc, 2);
+		s.start();
 	}
 }
