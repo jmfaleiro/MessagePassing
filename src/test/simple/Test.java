@@ -12,7 +12,7 @@ public class Test {
 		
 		// Create an empty array and the super simple process. 
 		JSONArray arg = new JSONArray();
-		arg.add(new JSONObject());
+		arg.add(new ShMemObject());
 		SimpleProcess proc = new SimpleProcess();
 		
 		// Create a client and server. 

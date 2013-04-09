@@ -10,11 +10,11 @@ public class SourceAggregator implements IProcess {
 		
 		// We expect that the caller will give us only new tweets. 
 		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		JSONObject vals = (JSONObject)ShMem.state.get("source-aggregate");
+		ShMemObject vals = (ShMemObject)ShMem.state.get("source-aggregate");
 		
 		for (Object obj : tweets) {
 			
-			JSONObject tweet = (JSONObject)obj;
+			ShMemObject tweet = (ShMemObject)obj;
 			String source_string = new String((String)tweet.get("source"));
 			
 			source_string.replaceAll("\\.com/&quot", "\\.com&quot");

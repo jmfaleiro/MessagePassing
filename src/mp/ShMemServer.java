@@ -75,7 +75,7 @@ public class ShMemServer implements Runnable {
 			Socket client_socket = null;
 			BufferedReader in = null;
 			PrintWriter out = null;
-			JSONObject ret = null;
+			ShMemObject ret = null;
 			
 			// Wait for a client to connect and initialize the input and output streams.
 			try {
@@ -96,9 +96,9 @@ public class ShMemServer implements Runnable {
 			// Try to parse out a JSON argument from the contents of the request. 
 			JSONParser parser = new JSONParser();
 			
-			JSONObject arg = null;
+			ShMemObject arg = null;
 			try {
-				arg = (JSONObject)parser.parse(in.readLine());
+				arg = (ShMemObject)parser.parse(in.readLine());
 			}
 			// IOException should just quit immediately, debug this..
 			catch(IOException e) {
@@ -116,11 +116,11 @@ public class ShMemServer implements Runnable {
 				// from the client's request. If it succeeds, call "process", otherwise, 
 				// communicate failure to the client. 
 				try {
-					JSONObject versioned_argument = (JSONObject)arg.get("argument");
+					ShMemObject versioned_argument = (ShMemObject)arg.get("argument");
 					ShMem.state = versioned_argument;
 					my_process.process();
 					
-					ret = new JSONObject();
+					ret = new ShMemObject();
 					ret.put("success",  1);
 					ret.put("response",  ShMem.state);
 				}
@@ -149,8 +149,8 @@ public class ShMemServer implements Runnable {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private JSONObject failure_message() {
-		JSONObject ret = new JSONObject();
+	private ShMemObject failure_message() {
+		ShMemObject ret = new ShMemObject();
 		ret.put("failure",  1);
 		return ret;
 	}

@@ -19,11 +19,11 @@ public class ShMem {
 	public static Map<Integer, Pair<String, Integer>> addresses;
 
 	
-	public static JSONObject state;		// Consolidated JSON state used on *all* forks and
+	public static ShMemObject state;		// Consolidated JSON state used on *all* forks and
 										// joins.
 	
-	private JSONObject reference;		// Used while merging.
-	private JSONObject child;			// Received from child after it is done.
+	private ShMemObject reference;		// Used while merging.
+	private ShMemObject child;			// Received from child after it is done.
 	private JSONParser parser;			// Use to parse objects. 
 	private ShMemThread thread;			// Does the actual processing in a separate thread.
 	private Thread thread_wrapper;		// Wrapper around ShMemThread for Thread library.
@@ -49,7 +49,7 @@ public class ShMem {
 			System.exit(-1);
 		}
 		
-		state = new JSONObject();
+		state = new ShMemObject();
 	}
 	
 	//
@@ -60,7 +60,7 @@ public class ShMem {
 	private ShMem(int slave) throws ParseException{
 		
 		parser = new JSONParser();
-		this.reference = (JSONObject) parser.parse(state.toJSONString());
+		this.reference = (ShMemObject) parser.parse(state.toJSONString());
 		Pair<String, Integer> address = addresses.get(slave);
 		
 		if (address == null) {
@@ -85,14 +85,14 @@ public class ShMem {
 	
 	private class ForkState {
 		
-		public JSONObject child;
+		public ShMemObject child;
 		public Thread thread_wrapper;
 		public ShMemThread thread;
 	}
 	
 	private class ShMemThread implements Runnable {
 		
-		private JSONObject args;
+		private ShMemObject args;
 		private String machine;
 		private int port;
 		
@@ -100,7 +100,7 @@ public class ShMem {
 		private BufferedReader in = null;
 		private PrintWriter out = null;
 		
-		public ShMemThread(JSONObject args, String machine, int port){
+		public ShMemThread(ShMemObject args, String machine, int port){
 			
 			this.args = args;
 			this.machine = machine;
@@ -132,15 +132,15 @@ public class ShMem {
 		@SuppressWarnings("unchecked")
 		private void Fork() {
 			
-			JSONObject to_send = new JSONObject();
+			ShMemObject to_send = new ShMemObject();
 			to_send.put("argument", args);
 			
 			JSONParser parser = new JSONParser();
-			JSONObject ret = null;
+			ShMemObject ret = null;
 			
 			try {
 				out.println(to_send.toJSONString());
-				ret = (JSONObject)parser.parse(in.readLine());
+				ret = (ShMemObject)parser.parse(in.readLine());
 			}
 			catch(Exception e){
 				
@@ -148,7 +148,7 @@ public class ShMem {
 			}
 			
 			if (ret.containsKey("success")) {
-				child = (JSONObject)ret.get("response");
+				child = (ShMemObject)ret.get("response");
 			}
 			else {
 				
@@ -177,16 +177,16 @@ public class ShMem {
 	//
 	// Recursively check that first and second are *identical* on the same key.
 	//
-	private boolean check_equal(final Object first, final Object second) {
+	public static boolean check_equal(final Object first, final Object second) {
 		
 		if (first.getClass() != second.getClass()) {
 			return false;
 		}
 		
-		if (first.getClass() == JSONObject.class) {
+		if (first.getClass() == ShMemObject.class) {
 			
-			JSONObject first_obj = (JSONObject)first;
-			JSONObject second_obj = (JSONObject) second;
+			ShMemObject first_obj = (ShMemObject)first;
+			ShMemObject second_obj = (ShMemObject) second;
 			Set<Object> first_keys = first_obj.keySet();
 			Set<Object> second_keys = second_obj.keySet();
 			
@@ -257,7 +257,7 @@ public class ShMem {
 	
 	private void merge() throws ParseException, ShMemFailure{
 		
-		JSONObject parent_copy = (JSONObject) parser.parse(state.toJSONString());
+		ShMemObject parent_copy = (ShMemObject) parser.parse(state.toJSONString());
 		
 		// First check for new keys in the child and make sure the parent doesn't have
 		// them.
