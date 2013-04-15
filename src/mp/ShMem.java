@@ -20,10 +20,12 @@ public class ShMem {
 
 	
 	public static ShMemObject state;		// Consolidated JSON state used on *all* forks and
-										// joins.
+											// joins.
 	
-	private ShMemObject reference;		// Used while merging.
-	private ShMemObject child;			// Received from child after it is done.
+	private String state_string;
+	private long fork_id;
+	
+	private JSONObject child;			// Received from child after it is done.
 	private JSONParser parser;			// Use to parse objects. 
 	private ShMemThread thread;			// Does the actual processing in a separate thread.
 	private Thread thread_wrapper;		// Wrapper around ShMemThread for Thread library.
@@ -60,7 +62,9 @@ public class ShMem {
 	private ShMem(int slave) throws ParseException{
 		
 		parser = new JSONParser();
-		this.reference = (ShMemObject) parser.parse(state.toJSONString());
+		
+		this.state_string = ShMem.state.toJSONString();
+		this.fork_id = ShMemObject.fork_id_cur;
 		Pair<String, Integer> address = addresses.get(slave);
 		
 		if (address == null) {
@@ -68,7 +72,9 @@ public class ShMem {
 			System.exit(-1);
 		}
 		
-		this.thread = new ShMemThread(reference, address.getLeft(), address.getRight());
+		this.thread = new ShMemThread(this.state_string, 
+									  address.getLeft(), 
+									  address.getRight());
 	}
 	
 	// 
@@ -92,7 +98,7 @@ public class ShMem {
 	
 	private class ShMemThread implements Runnable {
 		
-		private ShMemObject args;
+		private String state_string;
 		private String machine;
 		private int port;
 		
@@ -100,9 +106,9 @@ public class ShMem {
 		private BufferedReader in = null;
 		private PrintWriter out = null;
 		
-		public ShMemThread(ShMemObject args, String machine, int port){
+		public ShMemThread(String state_string, String machine, int port){
 			
-			this.args = args;
+			this.state_string = state_string;
 			this.machine = machine;
 			this.port = port;
 		}
@@ -132,15 +138,30 @@ public class ShMem {
 		@SuppressWarnings("unchecked")
 		private void Fork() {
 			
-			ShMemObject to_send = new ShMemObject();
-			to_send.put("argument", args);
+			JSONObject to_send = new JSONObject();
+			JSONObject to_send_state = null;
+			
 			
 			JSONParser parser = new JSONParser();
-			ShMemObject ret = null;
+			
+			try {
+				to_send_state = (JSONObject)parser.parse(state_string);
+			}
+			catch(ParseException e) {
+				e.printStackTrace();
+				System.exit(-1);
+			}
+			
+			assert to_send_state != null;
+			
+			to_send.put("argument",  to_send_state);
+			to_send.put("fork_id",  fork_id);
+			
+			JSONObject ret = null;
 			
 			try {
 				out.println(to_send.toJSONString());
-				ret = (ShMemObject)parser.parse(in.readLine());
+				ret = (JSONObject)parser.parse(in.readLine());
 			}
 			catch(Exception e){
 				
@@ -148,7 +169,7 @@ public class ShMem {
 			}
 			
 			if (ret.containsKey("success")) {
-				child = (ShMemObject)ret.get("response");
+				child = (JSONObject)ret.get("response");
 			}
 			else {
 				
@@ -257,67 +278,7 @@ public class ShMem {
 	
 	private void merge() throws ParseException, ShMemFailure{
 		
-		ShMemObject parent_copy = (ShMemObject) parser.parse(state.toJSONString());
 		
-		// First check for new keys in the child and make sure the parent doesn't have
-		// them.
-		Set<Object> ref_keys = reference.keySet();
-		Set<Object> parent_keys = parent_copy.keySet();
-		Set<Object> child_keys = child.keySet();
-		Set<Object> new_keys = new HashSet<Object>();
-		
-		for (Object key : child_keys) {
-			
-			if (!ref_keys.contains(key)) {
-				if (parent_keys.contains(key)) {
-					throw new ShMemFailure("Conflicting parent and child!");
-				}
-				else {
-					new_keys.add(key);
-				}
-			}
-		}
-		
-		// Check that every key in the reference is modified by at most
-		// one of the child and parent. 
-		for (Object key : ref_keys) {
-			
-			if (!parent_keys.contains(key)) {
-				
-				if (!child_keys.contains(key) || !check_equal(reference.get(key), child.get(key))) {
-					throw new ShMemFailure("Conflicting parent and child!");
-				}
-				continue;
-			}
-			else if (!child_keys.contains(key)) {
-				
-				if (!parent_keys.contains(key) || !check_equal(reference.get(key), parent_copy.get(key))) {
-					throw new ShMemFailure("Conflicting parent and child!");
-				}
-				parent_copy.remove(key);
-			}
-			else if ((reference.get(key).getClass() == parent_copy.get(key).getClass()) &&
-					 (reference.get(key).getClass() == child.get(key).getClass()) &&
-					 (parent_copy.get(key).getClass() == JSONArray.class)) {
-				
-				JSONArray merged = merge_arrays((JSONArray)parent_copy.get(key), 
-												(JSONArray)child.get(key), 
-												(JSONArray)reference.get(key));
-				parent_copy.put(key,  merged);
-			}
-			else if (check_equal(reference.get(key), parent_copy.get(key))){
-				parent_copy.put(key,  child.get(key));
-			}
-			else if (!check_equal(reference.get(key), child.get(key))) {
-				throw new ShMemFailure("Conflicting parent and child!");
-			}
-		}
-		
-		for (Object key : new_keys) {
-			parent_copy.put(key,  child.get(key));
-		}
-		
-		state = parent_copy;
 	}
 	
 	//
@@ -336,7 +297,7 @@ public class ShMem {
 			System.exit(-1);
 		}
 		
-		merge();
+		ShMem.state.merge(ShMem.state,  child, fork_id);
 	}
 	
 	//

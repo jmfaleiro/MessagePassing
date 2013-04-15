@@ -7,6 +7,7 @@ import org.json.simple.parser.*;
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
+import java.util.*;
 
 
 import org.apache.commons.lang3.tuple.*;
@@ -75,7 +76,7 @@ public class ShMemServer implements Runnable {
 			Socket client_socket = null;
 			BufferedReader in = null;
 			PrintWriter out = null;
-			ShMemObject ret = null;
+			JSONObject ret = null;
 			
 			// Wait for a client to connect and initialize the input and output streams.
 			try {
@@ -96,9 +97,9 @@ public class ShMemServer implements Runnable {
 			// Try to parse out a JSON argument from the contents of the request. 
 			JSONParser parser = new JSONParser();
 			
-			ShMemObject arg = null;
+			JSONObject arg = null;
 			try {
-				arg = (ShMemObject)parser.parse(in.readLine());
+				arg = (JSONObject)parser.parse(in.readLine());
 			}
 			// IOException should just quit immediately, debug this..
 			catch(IOException e) {
@@ -116,13 +117,18 @@ public class ShMemServer implements Runnable {
 				// from the client's request. If it succeeds, call "process", otherwise, 
 				// communicate failure to the client. 
 				try {
-					ShMemObject versioned_argument = (ShMemObject)arg.get("argument");
-					ShMem.state = versioned_argument;
+					
+					JSONObject versioned_argument = (JSONObject)arg.get("argument");
+					long fork_id = (Long)arg.get("fork_id");
+					
+					ShMemObject.fork_id_cur = fork_id;
+					ShMem.state = ShMemObject.json2shmem(versioned_argument);
+					
 					my_process.process();
 					
-					ret = new ShMemObject();
+					ret = new JSONObject();
 					ret.put("success",  1);
-					ret.put("response",  ShMem.state);
+					ret.put("response",  ShMemObject.get_diff_tree(ShMem.state,  fork_id));
 				}
 				// We return a failure message in case we get "is alive" messages as well.
 				// All the client really needs is *some* response from the server, we don't
@@ -149,8 +155,8 @@ public class ShMemServer implements Runnable {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private ShMemObject failure_message() {
-		ShMemObject ret = new ShMemObject();
+	private JSONObject failure_message() {
+		JSONObject ret = new JSONObject();
 		ret.put("failure",  1);
 		return ret;
 	}
