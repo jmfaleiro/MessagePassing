@@ -15,7 +15,12 @@ public class SimpleProcess implements IProcess{
 	@SuppressWarnings("unchecked")
 	public void process() {
 		
-		ShMem.state.put("this", "works");
+		try {
+			ShMem.state.put("Jose",  "Faleiro");
+		}
+		catch(Exception e) {
+			System.out.println("blah");
+		}
 	}
 
 }

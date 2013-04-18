@@ -123,6 +123,7 @@ public class ShMemServer implements Runnable {
 					
 					ShMemObject.fork_id_cur = fork_id;
 					ShMem.state = ShMemObject.json2shmem(versioned_argument);
+					ShMemObject.fork_id_cur += 1;
 					
 					my_process.process();
 					

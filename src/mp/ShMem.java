@@ -65,6 +65,7 @@ public class ShMem {
 		
 		this.state_string = ShMem.state.toJSONString();
 		this.fork_id = ShMemObject.fork_id_cur;
+		ShMemObject.fork_id_cur += 1;
 		Pair<String, Integer> address = addresses.get(slave);
 		
 		if (address == null) {

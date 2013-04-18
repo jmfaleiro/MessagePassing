@@ -63,13 +63,13 @@ public class ShMemObject extends JSONObject {
 			
 			// We only bother adding the subtree to diffs if it has been updated since the
 			// reference timestamp.
-			long timestamp = (Long)obj.get("shmem_timestamp");
+			long timestamp = (Long)val.get("shmem_timestamp");
 			if (timestamp > from_ts) {
 				
 				JSONObject to_add = new JSONObject();
 				to_add.put("shmem_timestamp",  timestamp);
 				
-				Object value = obj.get("value");
+				Object value = val.get("value");
 				
 				// If the value is an ShMemObject, recursively add the right diffs. 
 				if (value.getClass() == ShMemObject.class) {
@@ -111,7 +111,8 @@ public class ShMemObject extends JSONObject {
 		}
 		
 		update_difftree(this);
-		return super.put(key, value);
+		to_add.put("value", value);
+		return super.put(key, to_add);
 	}
 	
 	public Object get(String key)  {
@@ -234,6 +235,10 @@ public class ShMemObject extends JSONObject {
 					if (release_value.getClass() == JSONObject.class) {
 						ShMemObject mod_child = json2shmem((JSONObject)release_value);
 						acquire.put(key, mod_child);
+					}
+					else {
+						release_cur.put("shmem_timestamp",  acquire.fork_id_cur);
+						acquire.put(key, release_cur);
 					}
 				}
 			}
