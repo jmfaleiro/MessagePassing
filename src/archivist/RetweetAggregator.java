@@ -21,7 +21,12 @@ public class RetweetAggregator implements IProcess {
 		}
 		
 		count += old_count;
-		ShMem.state.put("retweet-aggregate",  count);
+		try {
+			ShMem.state.put("retweet-aggregate",  count);
+		}
+		catch(Exception e) {
+			System.exit(-1);
+		}
 	}
 	
 	public static void main(String [] args) {

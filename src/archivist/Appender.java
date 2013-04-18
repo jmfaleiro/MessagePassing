@@ -79,12 +79,17 @@ public class Appender {
 		
 		// Add dummy state for volume and user aggregations to use. 
 		
-		JSONObject empty = new JSONObject();
-		ShMem.state.put("volume-aggregate",  empty);
-		ShMem.state.put("user-aggregate",  empty);
-		ShMem.state.put("word-aggregate",  empty);
-		ShMem.state.put("url-aggregate",  empty);
-		ShMem.state.put("source-aggregate",  empty);
+		ShMem.state.put("volume-aggregate",  new ShMemObject());
+		
+		
+		ShMem.state.put("word-aggregate",  new ShMemObject());
+		
+		
+		ShMem.state.put("user-aggregate",  new ShMemObject());
+		ShMem.state.put("url-aggregate",  new ShMemObject());
+		
+		
+		ShMem.state.put("source-aggregate", new ShMemObject());
 		ShMem.state.put("retweet-aggregate",  0);
 		ShMem.state.put("tweets", tweets);
 		ShMem.state.put("search_term",  query_string);
@@ -92,27 +97,28 @@ public class Appender {
 		ShMem retweet_aggregation = ShMem.fork(0);
 		ShMem source_aggregation = ShMem.fork(1);
 		ShMem url_aggregation = ShMem.fork(2);
+		
 		ShMem user_aggregation = ShMem.fork(3);
+		
 		ShMem volume_aggregation = ShMem.fork(4);
-		ShMem work_aggregation = ShMem.fork(5); 
+		ShMem word_aggregation = ShMem.fork(5); 
 		
 		retweet_aggregation.join();
-		ShMem.state.put("tweets",  tweets);
+		
 		
 		source_aggregation.join();
-		ShMem.state.put("tweets", tweets);
+		
 
 		url_aggregation.join();
-		ShMem.state.put("tweets", tweets);
+		
 		
 		user_aggregation.join();
-		ShMem.state.put("tweets", tweets);
 		
 		volume_aggregation.join();
-		ShMem.state.put("tweets", tweets);
 		
-		work_aggregation.join();
-		ShMem.state.put("tweets", tweets);
+		
+		word_aggregation.join();
+		
 		
 		
 		/*

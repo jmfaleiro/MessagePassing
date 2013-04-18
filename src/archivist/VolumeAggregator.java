@@ -22,7 +22,7 @@ public class VolumeAggregator implements IProcess{
 		
 		// We expect that the caller will give us only new tweets. 
 		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		JSONObject vals = (JSONObject)ShMem.state.get("volume-aggregate");
+		ShMemObject vals = (ShMemObject)ShMem.state.get("volume-aggregate");
 		
 		for (Object obj : tweets) {
 			
@@ -51,7 +51,12 @@ public class VolumeAggregator implements IProcess{
 			
 			// Increment count and add it to the dictionary.
 			++count;
-			vals.put(date_string,  count);
+			try {
+				vals.put(date_string,  count);
+			}
+			catch (Exception e) {
+				System.exit(-1);
+			}
 		}
 	}
 

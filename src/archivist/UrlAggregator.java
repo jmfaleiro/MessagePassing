@@ -25,7 +25,7 @@ public class UrlAggregator implements IProcess {
 	public void process() {
 		
 		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		JSONObject vals = (JSONObject)ShMem.state.get("url-aggregate");
+		ShMemObject vals = (ShMemObject)ShMem.state.get("url-aggregate");
 		
 		for (Object obj : tweets) {
 			
@@ -41,7 +41,12 @@ public class UrlAggregator implements IProcess {
 				}
 				
 				++count;
-				vals.put(url,  count);
+				try {
+					vals.put(url,  count);
+				}
+				catch(Exception e) {
+					System.exit(-1);
+				}
 			}
 		}
 	}

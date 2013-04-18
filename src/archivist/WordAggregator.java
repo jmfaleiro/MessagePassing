@@ -78,7 +78,12 @@ public class WordAggregator implements IProcess{
 				}
 				++count;
 				
-				container.put(tweet_pieces[i],  count);
+				try {
+					container.put(tweet_pieces[i],  count);
+				}
+				catch (Exception e) {
+					System.exit(-1);
+				}
 			}
 		}
     }
@@ -98,7 +103,7 @@ public class WordAggregator implements IProcess{
 		for (Object obj : tweets) {
 			
 			// Extract tweet text and sanitize it. 
-			ShMemObject tweet = (ShMemObject)obj;
+			JSONObject tweet = (JSONObject)obj;
 			String tweet_text = (String)tweet.get("text");
 			process_tweet(vals, tweet_text, exclude_words);
 		}
