@@ -10,15 +10,15 @@ import org.apache.commons.lang3.tuple.*;
 // TODO: 1) *Enforce* the rule that an object can have just a single reference
 public class ShMemObject extends JSONObject {
 	
-	protected ShMemObject parent;
-	protected String parent_key;
+	private ShMemObject parent;
+	private String parent_key;
 	
 	public static long fork_id_cur;
 	
 	public ShMemObject() {
 		super();
-		parent = null;
-		parent_key = "";
+		this.parent = null;
+		this.parent_key = "";
 	}
 	
 	public static ShMemObject json2shmem(JSONObject root) throws ShMemFailure {
@@ -31,11 +31,12 @@ public class ShMemObject extends JSONObject {
 			
 			Object value = wrapper_value.get("value");
 			
+			JSONObject to_add = new JSONObject();
+			to_add.put("shmem_timestamp",  fork_id_cur);
+			
 			if (value.getClass() == JSONObject.class) {
 				
 				ShMemObject child = json2shmem((JSONObject)value);
-				child.parent = ret;
-				child.parent_key = key;
 				value = child;
 			}
 			
@@ -101,13 +102,26 @@ public class ShMemObject extends JSONObject {
 		if (value.getClass() == ShMemObject.class) {
 			
 			ShMemObject sh_mem_value = (ShMemObject)value;
-			long timestamp = (Long)sh_mem_value.get("shmem_timestamp");
-			if (timestamp != fork_id_cur) {
-				throw new ShMemFailure("Inconsistent timestamps!");
-			}
-			
 			sh_mem_value.parent = this;
 			sh_mem_value.parent_key = key;
+				
+			/*
+			// The object is currently empty.
+			if (sh_mem_value.keySet().size() != 0) {
+				
+				// Make sure that there is *some* key 
+				boolean consistent = false;
+				for (Object k : sh_mem_value.keySet()) {
+					
+					String inner_key = (String)k;
+					long timestamp = (Long)(((JSONObject)sh_mem_value.get(k)).get("shmem_timestamp"));
+					if (timestamp == fork_id_cur) {
+						consistent = true;
+						break;
+					}
+				}
+			}
+			*/
 		}
 		
 		update_difftree(this);
@@ -133,13 +147,17 @@ public class ShMemObject extends JSONObject {
 		return ret;
 	}
 	
+	private Object get_wrapper(String key) {
+		return super.get(key);
+	}
+	
 	private static void update_difftree(ShMemObject cur) throws ShMemFailure{
 		
 		
 		while (cur.parent != null) {
 			
 			String key = cur.parent_key;
-			JSONObject val = (JSONObject)cur.parent.get(key);
+			JSONObject val = (JSONObject)cur.parent.get_wrapper(key);
 			long cur_timestamp = (Long)val.get("shmem_timestamp");
 			
 			// First check if we really need to update the timestamp.
@@ -237,8 +255,8 @@ public class ShMemObject extends JSONObject {
 						acquire.put(key, mod_child);
 					}
 					else {
-						release_cur.put("shmem_timestamp",  acquire.fork_id_cur);
-						acquire.put(key, release_cur);
+						
+						acquire.put(key, release_value);
 					}
 				}
 			}

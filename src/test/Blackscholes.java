@@ -170,9 +170,8 @@ public class Blackscholes {
 			slaves[i] = new ShMemServer(p, i);
 			slaves[i].start();
 			*/
-			
 			ShMem.state.put("num_threads",  nThreads);
-			ShMem.state.put("slave_number",  i);
+			ShMem.state.put("slave_number", i);
 			clients[i] = ShMem.fork(i);
 		}
 		
@@ -180,16 +179,26 @@ public class Blackscholes {
 			clients[i].join();
 		}
 		
+		ShMemObject result_objs = (ShMemObject)ShMem.state.get("results");
 		for (int i = 0; i < numOptions; ++i) {
 			
-			results[i] = (Double)ShMem.state.get(Integer.toString(i));
+			try {
+				Object blah = result_objs.get(Integer.toString(i));
+				assert blah != null;
+				results[i] = (Double)blah;
+			}
+			catch(Exception e) {
+				System.exit(-1);
+			}
 		}
+		
 	}
 	
 	private static void parse_options(String input_file) {
 		
 		JSONArray data_add = new JSONArray();
-		JSONArray results_add = new JSONArray();
+		ShMemObject results_add = new ShMemObject();
+		
 		//Read input data from file
 	    try{
 	    	
@@ -225,18 +234,19 @@ public class Blackscholes {
 	    		data_value.put("DGrefval", Double.parseDouble(parts[8]));
 	    		
 	    		data_add.add(data_value);
-	    		results_add.add(0);
 	    	}
 	    	
-	    	ShMem.state.put("data",  data_add);
 	    	ShMem.state.put("results",  results_add);
+	    	ShMem.state.put("data",  data_add);
+	    	
 	    	file.close();
     		reader.close();
 	    }
 	    catch(Exception e){
 	    	
 	    	System.out.println(e.toString());
-	    	return;
+	    	System.exit(-1);
+	    	
 	    }
 		
 	}

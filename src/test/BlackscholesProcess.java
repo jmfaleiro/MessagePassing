@@ -11,11 +11,11 @@ public class BlackscholesProcess implements IProcess {
 
 
 	@SuppressWarnings("unchecked")
-	public void process() {
+	public void process(){
 		
 		
 		JSONArray data = (JSONArray)ShMem.state.get("data");
-		JSONArray results = (JSONArray)ShMem.state.get("results");
+		ShMemObject results = (ShMemObject)ShMem.state.get("results");
 		long num_threads = (Long)ShMem.state.get("num_threads");
 		long start = (Long)ShMem.state.get("slave_number") * (data.size() / num_threads);
 		long end = start + (data.size()) / num_threads;
@@ -35,7 +35,12 @@ public class BlackscholesProcess implements IProcess {
 			double price = Blackscholes.BlkSchlsEqEuroNoDiv(s, strike,
 											   				r, v, t, otype,
 											   				0);
-			results.set(i_usable,  price);
+			try {
+				results.put(Long.toString(i),  price);
+			}
+			catch(Exception e) {
+				System.exit(-1);
+			}
 		}
 	}
 }
