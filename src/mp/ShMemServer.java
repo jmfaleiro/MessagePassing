@@ -21,6 +21,7 @@ public class ShMemServer implements Runnable {
 	
 	// Server object that listens on a port for client connections. 
 	private ServerSocket server;
+	
 	// Code to run on a fork request. 
 	private IProcess my_process; 
 	
@@ -92,8 +93,6 @@ public class ShMemServer implements Runnable {
 				System.exit(-1);
 			}
 			
-			
-			
 			// Try to parse out a JSON argument from the contents of the request. 
 			JSONParser parser = new JSONParser();
 			
@@ -113,22 +112,35 @@ public class ShMemServer implements Runnable {
 			
 			
 			if (ret == null) {
+				
 				// Try to parse out a versioned object - which we encode as a JSONArray -
 				// from the client's request. If it succeeds, call "process", otherwise, 
 				// communicate failure to the client. 
 				try {
 					
+					// Get the argument and get the fork_id. 
 					JSONObject versioned_argument = (JSONObject)arg.get("argument");
 					long fork_id = (Long)arg.get("fork_id");
 					
+					// Set the current fork_id as the timestamp to start from. 
 					ShMemObject.fork_id_cur = fork_id;
+					
+					// De-serialize the JSONObject state into an ShMemObject. 
 					ShMem.state = ShMemObject.json2shmem(versioned_argument);
+					
+					// Increment the current fork_id_cur. This has the effect that all subsequent
+					// puts will be marked as "later" than the given "fork_id" and included in
+					// the diff_tree. 
 					ShMemObject.fork_id_cur += 1;
 					
+					// Start the acquiring process. 
 					my_process.process();
 					
 					ret = new JSONObject();
 					ret.put("success",  1);
+					
+					// Get the diff_tree since the original fork_id (which we recieved as a
+					// argument). 
 					ret.put("response",  ShMemObject.get_diff_tree(ShMem.state,  fork_id));
 				}
 				// We return a failure message in case we get "is alive" messages as well.
