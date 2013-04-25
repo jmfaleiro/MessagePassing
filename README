@@ -1,0 +1,88 @@
+Synchronizing two process using fork/join or acquire/release pairs requires
+merging the shared JSON state of the two processes. A really inefficient
+way to do this is to ship the entire state from the sending process to the
+receiving process. We can do better by tracking only the *changes* to the
+sender's object. In the simple fork/join case, the joining process only sends
+changes it made to shared state it received from the forking process from the
+time of the fork to the time of the join. 
+
+A JSONObject is basically a map of key-value pairs. Well-formed JSON requires
+all keys to be strings. Values can have a type of:
+- long
+- double
+- string
+- JSONObject
+- JSONArray (a wrapper around a list of JSONObjects)
+
+The JSONObject class is extended by the ShMemObject class which adds 
+functionality for transparently tracking changes (adding or deleting key-value
+pairs from the map). 
+
+ShMemObject overrides JSONObject's put method. In JSONObject's put method, we
+just directly put a key-value pair into the JSONObject's underlying map. In an
+ShMemObject, we wrap every key-value pair in a JSONObject. This wrapped 
+JSONObject is then inserted into the underlying map, with the given key pointing
+to the wrapped object. The wrapped object contains two keys: "timestamp" and 
+"value". 
+
+"timestamp" records the current global timestamp, which is a static counter in 
+the ShMemObject class. 
+"value" is the actual value which is given to us. 
+
+To better illustrate the process a put in a JSONObject will have the following
+effect on an empty map:
+
+{ }      put("key", 1)        { "key" : 1 }
+         =============>
+
+Whereas a put in an ShMemObject will have the following effect (assuming that
+the current timestamp is 23:
+
+{ }     put("key", 1)         { "key" : {"value" : 1, "timestamp" : 23} }
+        =============>
+
+ShMemObject uses a JSONObject to wrap the value being inserted. If a user needs
+incremental processing of objects, then she must use ShMemObjects where she 
+would have used JSONObjects. There is nothing which prevents a user from using
+JSONObjects, but JSONObjects are treated as blobs and are not "diffed".
+
+An ShMemObject adds a "parent" field to JSONObject, which points to the parent 
+of an instance of an ShMemObject (remember that JSON objects can be recursively
+nested, the parent field is used to track this in the child). When we put
+a value into an ShMemObject, we recursively walk up the hierarchy, updating
+all timestamps to the current timestamp. Recursively updating timestamps in 
+this manner has the effect of automatically tracking the last timestamp that
+an entire ShMemObject sub-tree was modified. Concretely, the invariant that
+is preserved is that the timestamp of the root of such an ShMemObject tree will
+be the maximum timestamp of any of its leaves. This allows us to quickly 
+extract only the relevant "deltas" when we need to perform a join. It also 
+reduces the merge process to a comparison of timestamps on leaves. 
+
+To extract the relevant deltas, we have implemented a "get_diff_tree" method
+in ShMemObject. This method takes a timestamp as input and extracts only
+the parts of the tree whose timestamps are greater than the given timestamp.
+We can do this very efficiently because of the invariant in the previous
+paragraph. 
+
+Of course, recursively walking up the tree and updating ancestors' timestamps
+on every put increases the cost of the put operation, but it should not be too
+bad because JSON objects tend to be more "wide" than "deep". 
+
+Another reason for keeping parent pointers is that it allows ShMemObjects to 
+be arbitrarily composed and still preserve the "delta" information. For 
+instance, we can allocate a new ShMemObject, work on it for a while and then 
+"put" it into a parent object. With the invariant on timestamps, we can just 
+add the new ShMemObject to the parent one and propogate its root's timestamp up
+the hierarchy of the parent's. 
+
+When we generalize the fork-join model to the acquire-release model, we just
+have to modify the type of the timestamps to be vector clocks, and require the
+"get_diff_tree" and "merge" methods to check that writes to leaves are not
+conflicting. 
+
+
+
+
+
+
+
