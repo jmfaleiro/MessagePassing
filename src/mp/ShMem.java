@@ -60,19 +60,24 @@ public class ShMem {
 	// to run in the background when fork is invoked. 
 	//
 	private ShMem(int slave) throws ParseException{
-		
 		parser = new JSONParser();
 		
+		// Deep copy of the parent state. 
 		this.state_string = ShMem.state.toJSONString();
+		
+		// Fork_id to pass to the acquiring process. 
 		this.fork_id = ShMemObject.fork_id_cur;
+		
+		// Increment the fork_id so we can track future modifications to shared state. 
 		ShMemObject.fork_id_cur += 1;
 		Pair<String, Integer> address = addresses.get(slave);
-		
 		if (address == null) {
 			System.out.println("Address is invalid!");
 			System.exit(-1);
 		}
 		
+		// Create a new ShMemThread which will contact the acquiring process
+		// in the background. 
 		this.thread = new ShMemThread(this.state_string, 
 									  address.getLeft(), 
 									  address.getRight());
@@ -80,35 +85,30 @@ public class ShMem {
 	
 	// 
 	// Wrapper for creating a new thread and spawning it off with fork arguments
-	// the background.
+	// the background. Returns a handle to this object for join-ing. 
 	//
 	public static ShMem fork(int slave) throws ShMemFailure, ParseException{
-		
 		ShMem new_fork = new ShMem(slave);
 		new_fork.thread_wrapper = new Thread(new_fork.thread);
 		new_fork.thread_wrapper.start();
 		return new_fork;
 	}
 	
-	private class ForkState {
-		
-		public ShMemObject child;
-		public Thread thread_wrapper;
-		public ShMemThread thread;
-	}
-	
+	// This class implements the thread interface to communicate with the acquiring
+	// process asynchronously. 
 	private class ShMemThread implements Runnable {
 		
-		private String state_string;
-		private String machine;
-		private int port;
+		private String state_string;				// A deep copy of the state. 
+		private String machine;						// The acquiring process' machine. 
+		private int port;							// The acquiring process' port. 
 		
-		private Socket conx;
-		private BufferedReader in = null;
-		private PrintWriter out = null;
+		private Socket conx;						// Connection to talk to the acquring process.
+		private BufferedReader in = null;			// Reader to parse input from the acquiring proc.
+		private PrintWriter out = null;				// Writer to send data to the acquiring proc. 
 		
+		
+		// Constructor, just initialize the data, machine and port parameters. 
 		public ShMemThread(String state_string, String machine, int port){
-			
 			this.state_string = state_string;
 			this.machine = machine;
 			this.port = port;
@@ -119,8 +119,9 @@ public class ShMem {
 		//
 		private void Connect() {
 			
+			// Keep re-trying forever.
+			// XXX: We should be doing something more sensible here!
 			while (true) {
-				
 				try {
 					conx = new Socket(machine, port);
 					in = new BufferedReader(new InputStreamReader(conx.getInputStream()));
@@ -139,13 +140,16 @@ public class ShMem {
 		@SuppressWarnings("unchecked")
 		private void Fork() {
 			
+			// To send contains the message we're sending. It wraps the actual "state" as a
+			// value in its map. 
 			JSONObject to_send = new JSONObject();
+			
+			// The real "shared state". 
 			JSONObject to_send_state = null;
-			
-			
 			JSONParser parser = new JSONParser();
-			
 			try {
+				
+				// Convert the serialized copy of shared state to a JSONObject. 
 				to_send_state = (JSONObject)parser.parse(state_string);
 			}
 			catch(ParseException e) {
@@ -153,23 +157,36 @@ public class ShMem {
 				System.exit(-1);
 			}
 			
+			// Make sure that we successfully converted serialized state to a JSONObject. 
 			assert to_send_state != null;
 			
+			// Add the state and timestamp to the message we're going to send. 
 			to_send.put("argument",  to_send_state);
 			to_send.put("fork_id",  fork_id);
 			
+			// This object is the message we get in response to the fork. 
+			// It will contain the appropriate diffs. 
 			JSONObject ret = null;
 			
 			try {
+				
+				// Send the message (to_send) to the acquiring process. 
 				out.println(to_send.toJSONString());
+				
+				// Wait until the acquiring process responds to us. 
 				ret = (JSONObject)parser.parse(in.readLine());
 			}
+			
+			// Sophisticated error handling ;)
+			// XXX: Fix this!
 			catch(Exception e){
-				
 				System.out.println("blah");
 			}
 			
+			// Make sure that we computation forked was successful. 
 			if (ret.containsKey("success")) {
+				
+				// Get the response. 
 				child = (JSONObject)ret.get("response");
 			}
 			else {
@@ -178,6 +195,7 @@ public class ShMem {
 				System.exit(-1);
 			}
 			
+			// Clean-up the connection state. 
 			try {
 				out.close();
 				in.close();
@@ -189,7 +207,9 @@ public class ShMem {
 		}
 
 		public void run() {
-
+			
+			// First connect to the process we want to fork to, then do the actual
+			// fork. 
 			Connect();
 			Fork();
 		}
@@ -250,6 +270,8 @@ public class ShMem {
 		return true;
 	}
 	
+	// XXX: This method is not currently used because we treat arrays as leaves, but we
+	// probably want to do something more intelligent with arrays. Use it then. 
 	private JSONArray merge_arrays(JSONArray first, JSONArray second, JSONArray ref) throws ShMemFailure {
 		
 		int first_len = first.size();
@@ -277,11 +299,6 @@ public class ShMem {
 		return ret;
 	}
 	
-	private void merge() throws ParseException, ShMemFailure{
-		
-		
-	}
-	
 	//
 	// Do a super simple merge. We just check that for every *new* key in the 
 	// child. 
@@ -290,6 +307,7 @@ public class ShMem {
 	public synchronized void join() throws ShMemFailure, ParseException{
 		
 		try {
+			// Wait until the child process responds. 
 			thread_wrapper.join();
 		}
 		catch(InterruptedException e) {
@@ -298,11 +316,13 @@ public class ShMem {
 			System.exit(-1);
 		}
 		
+		// Incorporate the deltas into our state!
 		ShMem.state.merge(ShMem.state,  child, fork_id);
 	}
 	
 	//
-	// Populate the address book in memory with the addresses from disk. 
+	// Populate the address book in memory with the addresses from disk. Boring
+	// file parsing code. 
 	// 
 	private static void populate_addresses(String input_file) {
 		

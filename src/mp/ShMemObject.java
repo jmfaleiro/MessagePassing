@@ -1,6 +1,5 @@
 package mp;
 
-import mp.Diff.DiffType;
 
 import org.json.simple.*;
 import java.util.*;
