@@ -17,7 +17,7 @@ public class Blackscholes {
 	public static int numOptions;
 	
 	// This is the shared state we care about.
-	public static OptionData[] data;
+	
 	public static double[] results;
 	
 	// Some thread local state that gets replicated by the fork.
@@ -234,8 +234,6 @@ public class Blackscholes {
 			BufferedReader file = new BufferedReader(reader);
 	    	
 	    	int numOptions = Integer.parseInt(file.readLine());
-	    	
-	    	data = new OptionData[numOptions];
 	    	
 	    	for(int j = 0; j < numOptions; ++j){
 	    		
