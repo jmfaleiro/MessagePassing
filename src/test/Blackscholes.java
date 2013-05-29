@@ -158,43 +158,70 @@ public class Blackscholes {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void runParallel(String input_file) throws InterruptedException, ParseException, ShMemFailure {
-		
-		ShMemServer[] slaves = new ShMemServer[nThreads];
-		ShMem[] clients = new ShMem[nThreads];
-		
-		
-		for (int i = 0; i < nThreads; ++i) {
-			/*
-			BlackscholesProcess p = new BlackscholesProcess();
-			slaves[i] = new ShMemServer(p, i);
-			slaves[i].start();
-			*/
-			ShMem.state.put("num_threads",  nThreads);
-			ShMem.state.put("slave_number", i);
-			clients[i] = ShMem.fork(i);
-		}
-		
-		for (int i = 0; i < nThreads; ++i) {
-			clients[i].join();
-		}
-		
-		ShMemObject result_objs = (ShMemObject)ShMem.state.get("results");
-		for (int i = 0; i < numOptions; ++i) {
+	public static void runParallel(String input_file, int node_id, int total_nodes) throws InterruptedException, ParseException, ShMemFailure {
+		if (node_id == 0) {
 			
+			parse_options(ShMem.state_, input_file);
+			ShMem.state_.put("num_threads",  total_nodes-1);
+			for (int i = 1; i < total_nodes; ++i) {
+				ShMem.Release(i);
+			}
+			for (int i = 1; i < total_nodes; ++i) {
+				ShMem.Acquire(i);
+			}
+			
+			ShMemObject result_objs = (ShMemObject)ShMem.state_.get("results");
+			for (int i = 0; i < numOptions; ++i) {
+				
+				try {
+					Object blah = result_objs.get(Integer.toString(i));
+					assert blah != null;
+					results[i] = (Double)blah;
+				}
+				catch(Exception e) {
+					System.exit(-1);
+				}
+			}
+		}
+		else {
+			ShMem.Acquire(0);
+			process(node_id);
+			ShMem.Release(0);
+		}
+	}
+	
+	private static void process(int node_number) {
+		JSONArray data = (JSONArray)ShMem.state_.get("data");
+		ShMemObject results = (ShMemObject)ShMem.state_.get("results");
+		long num_threads = (Long)ShMem.state_.get("num_threads");
+		long start = ((long)node_number - 1) * (data.size() / num_threads);
+		long end = start + (data.size()) / num_threads;
+		
+		for (long i = start; i < end; ++i) {
+			
+			int i_usable = ((Long)i).intValue();
+			
+			JSONObject cur_data = (JSONObject)data.get(i_usable);
+			double s = (Double)cur_data.get("s");
+			double strike = (Double)cur_data.get("strike");
+			double r = (Double)cur_data.get("r");
+			double v = (Double)cur_data.get("v");
+			double t = (Double)cur_data.get("t");
+			long otype = (long)((String)cur_data.get("OptionType")).charAt(0);
+			
+			double price = Blackscholes.BlkSchlsEqEuroNoDiv(s, strike,
+											   				r, v, t, otype,
+											   				0);
 			try {
-				Object blah = result_objs.get(Integer.toString(i));
-				assert blah != null;
-				results[i] = (Double)blah;
+				results.put(Long.toString(i),  price);
 			}
 			catch(Exception e) {
 				System.exit(-1);
 			}
 		}
-		
 	}
 	
-	private static void parse_options(String input_file) {
+	private static void parse_options(ShMemObject memory, String input_file) {
 		
 		JSONArray data_add = new JSONArray();
 		ShMemObject results_add = new ShMemObject();
@@ -236,8 +263,8 @@ public class Blackscholes {
 	    		data_add.add(data_value);
 	    	}
 	    	
-	    	ShMem.state.put("results",  results_add);
-	    	ShMem.state.put("data",  data_add);
+	    	memory.put("results",  results_add);
+	    	memory.put("data",  data_add);
 	    	
 	    	file.close();
     		reader.close();
@@ -255,35 +282,39 @@ public class Blackscholes {
 		
 	    nThreads = Integer.parseInt(args[0]); 
 	    numOptions = Integer.parseInt(args[1]);
-	    String input_file = args[2];
-	    String output_file = args[3];
+	    int node_id = Integer.parseInt(args[2]);
+	    String input_file = args[3];
+	    String output_file = args[4];
 	    
 	    output_file = output_file + "-parallel.txt";
 	   
 	    Blackscholes.results = new double[numOptions];
-	    parse_options(input_file);
-	    runParallel(input_file);
 	    
-	    try{
-	    	FileWriter file = new FileWriter(output_file);
-	    	BufferedWriter writer = new BufferedWriter(file);
-	    	
-	    	
-	    	for(int i= 0; i < numOptions; ++i){
-	    		
-	    		String toWrite = Double.toString(results[i]);
-	    		writer.write(toWrite);
-	    		writer.write("\n");
-	    	}
-	    	
-	    	writer.close();
-	    	file.close();
-	    	
-	    }
-	    catch(Exception e){
-	    	
-	    	System.out.println(e.toString());
-	    	return;
+	    ShMem.Init(node_id);
+	    runParallel(input_file, node_id, nThreads);
+	    
+	    if (node_id == 0) {
+		    try{
+		    	FileWriter file = new FileWriter(output_file);
+		    	BufferedWriter writer = new BufferedWriter(file);
+		    	
+		    	
+		    	for(int i= 0; i < numOptions; ++i){
+		    		
+		    		String toWrite = Double.toString(results[i]);
+		    		writer.write(toWrite);
+		    		writer.write("\n");
+		    	}
+		    	
+		    	writer.close();
+		    	file.close();
+		    	
+		    }
+		    catch(Exception e){
+		    	
+		    	System.out.println(e.toString());
+		    	return;
+		    }
 	    }
 	}
 }

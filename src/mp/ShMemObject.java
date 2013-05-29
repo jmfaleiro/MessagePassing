@@ -1,6 +1,8 @@
 package mp;
 
 
+import mp.ITimestamp.Comparison;
+
 import org.json.simple.*;
 import java.util.*;
 
@@ -23,7 +25,10 @@ public class ShMemObject extends JSONObject {
 	
 	// The current value of "time". All puts to an ShMemObject will take this value. The value
 	// is changed whenever we fork. 
-	public static long fork_id_cur;
+	public static ITimestamp now_;
+	
+	// Index of the current node in the timestamps. 
+	public static int cur_node_;
 	
 	// Initialize an empty ShMemObject. 
 	public ShMemObject() {
@@ -45,13 +50,9 @@ public class ShMemObject extends JSONObject {
 			// Get the key.
 			String key = (String)k;
 			
-			// Get the wrapped value. 
+			// Get the wrapped value and its timestamp.  
 			JSONObject wrapper_value = (JSONObject)root.get(k);
 			Object value = wrapper_value.get("value");
-			
-			// Put the value into a wrapper (to_add in this case). 
-			JSONObject to_add = new JSONObject();
-			to_add.put("shmem_timestamp",  fork_id_cur);
 			if (value.getClass() == JSONObject.class) {
 				
 				// Recursively do this on this object's children. 
@@ -59,8 +60,15 @@ public class ShMemObject extends JSONObject {
 				value = child;
 			}
 			
-			// Finally, put the value into the current ShMemObject. 
-			ret.put(key, value);
+			ITimestamp child_ts = VectorTimestamp.Deserialize((String)wrapper_value.get("shmem_timestamp"),
+															  cur_node_);
+			
+			// Temporarily switch timestamps so that the inserted values have the right
+			// timestamp. 
+			// 
+			// The child's timestamp shouldn't be subsumed by now_.
+			assert(child_ts.Compare(now_) != Comparison.LT);	
+			ret.insert(key,  value,  child_ts);
 		}
 		return ret;
 	}
@@ -69,7 +77,7 @@ public class ShMemObject extends JSONObject {
 	//
 	// Recursively select the timestamps from the object for merging.
 	//
-	public static JSONObject get_diff_tree(ShMemObject obj, long from_ts) {
+	public static JSONObject get_diff_tree(ShMemObject obj, ITimestamp from_ts) throws ShMemFailure{
 		JSONObject ret = new JSONObject();
 		
 		// Get the set of keys from this object. 
@@ -85,10 +93,11 @@ public class ShMemObject extends JSONObject {
 			// INVARIANT: The root's timestamp is the maximum timestamp of any of its leaves. 
 			// Hence, if the root's timestamp is less than or equal to from_ts, none of the internal
 			// nodes can ever have a timestamp greater than from_ts. 
-			long timestamp = (Long)val.get("shmem_timestamp");
-			if (timestamp > from_ts) {
+			ITimestamp timestamp = (ITimestamp)val.get("shmem_timestamp");
+			if (timestamp.Compare(from_ts) == Comparison.GE) {
+			
 				JSONObject to_add = new JSONObject();
-				to_add.put("shmem_timestamp",  timestamp);
+				to_add.put("shmem_timestamp",  timestamp.Serialize());
 				Object value = val.get("value");
 				
 				// If the value is an ShMemObject, recursively add the right diffs. 
@@ -106,6 +115,51 @@ public class ShMemObject extends JSONObject {
 		return ret;
 	}
 	
+	public ITimestamp MergeTime() throws ShMemFailure {
+		ITimestamp ret = now_.Copy();
+		for (Object k : this.keySet()) {
+			ITimestamp temp = (ITimestamp)((JSONObject)super.get(k)).get("shmem_timestamp");
+			ret.Union(temp);
+		}
+		return ret;
+	}
+	
+	private Object insert(String key, Object value, ITimestamp ts) throws ShMemFailure {
+		
+		// We wrap the value in the "to_add" JSONObject.
+		JSONObject to_add = new JSONObject();
+		
+		// Add the timestamp to the wrapper. 
+		to_add.put("shmem_timestamp",  ts);
+		
+		// If the value is an ShMemObject class, update its parent and parent_key information.
+		// The parent is the current object (this) and the key is the 'key' argument. 
+		if (value.getClass() == ShMemObject.class) {
+			ShMemObject sh_mem_value = (ShMemObject)value;
+			sh_mem_value.parent = this;
+			sh_mem_value.parent_key = key;
+		}
+		
+		// Recursively update this ShMemObject's parents' timestamps. 
+		update_difftree(this, ts);
+		
+		// Finally, put the actual value into the wrapper and insert the wrapper into
+		// 'this'. 
+		to_add.put("value", value);
+		return super.put(key, to_add);
+	}
+	
+	private Object delete(String key, ITimestamp ts) throws ShMemFailure {
+		
+		Object ret = super.remove(key);
+		
+		// Update diff meta data
+		JSONObject to_add = new JSONObject();
+		to_add.put("shmem_timestamp",  ts);
+		update_difftree(this, ts);
+		return ret;
+	}
+	
 	// This method interposes on JSONObject's put method. 
 	// Records the diff to send to the joiner. 
 	//
@@ -114,11 +168,11 @@ public class ShMemObject extends JSONObject {
 	//
 	public Object put(String key, Object value) throws ShMemFailure{
 		
-		// We wrapp the value in the "to_add" JSONObject.
+		// We wrap the value in the "to_add" JSONObject.
 		JSONObject to_add = new JSONObject();
 		
 		// Add the timestamp to the wrapper. 
-		to_add.put("shmem_timestamp",  fork_id_cur);
+		to_add.put("shmem_timestamp",  now_);
 		
 		// If the value is an ShMemObject class, update its parent and parent_key information.
 		// The parent is the current object (this) and the key is the 'key' argument. 
@@ -126,28 +180,10 @@ public class ShMemObject extends JSONObject {
 			ShMemObject sh_mem_value = (ShMemObject)value;
 			sh_mem_value.parent = this;
 			sh_mem_value.parent_key = key;
-				
-			/*
-			// The object is currently empty.
-			if (sh_mem_value.keySet().size() != 0) {
-				
-				// Make sure that there is *some* key 
-				boolean consistent = false;
-				for (Object k : sh_mem_value.keySet()) {
-					
-					String inner_key = (String)k;
-					long timestamp = (Long)(((JSONObject)sh_mem_value.get(k)).get("shmem_timestamp"));
-					if (timestamp == fork_id_cur) {
-						consistent = true;
-						break;
-					}
-				}
-			}
-			*/
 		}
 		
 		// Recursively update this ShMemObject's parents' timestamps. 
-		update_difftree(this);
+		update_difftree(this, now_);
 		
 		// Finally, put the actual value into the wrapper and insert the wrapper into
 		// 'this'. 
@@ -175,11 +211,9 @@ public class ShMemObject extends JSONObject {
 		Object ret = super.remove(key);
 		
 		// Update diff meta data
-		update_difftree(this);
+		update_difftree(this, now_);
 		JSONObject to_add = new JSONObject();
-		to_add.put("shmem_timestamp",  fork_id_cur);
-		to_add.put("value",  null);
-		
+		to_add.put("shmem_timestamp",  now_);
 		return ret;
 	}
 	
@@ -190,20 +224,19 @@ public class ShMemObject extends JSONObject {
 	
 	// Recursively update the given ShMemObject's (cur) ancestor's timestamps
 	// to reflect a new update. 
-	private static void update_difftree(ShMemObject cur) throws ShMemFailure{
+	private static void update_difftree(ShMemObject cur, ITimestamp ts) throws ShMemFailure{
 		while (cur.parent != null) {
 			String key = cur.parent_key;
 			
 			// Get cur's wrapper in its parent. 
 			JSONObject val = (JSONObject)cur.parent.get_wrapper(key);
-			long cur_timestamp = (Long)val.get("shmem_timestamp");
+			ITimestamp cur_timestamp = (ITimestamp)val.get("shmem_timestamp");
 			
 			// First check if we really need to update the timestamp.
 			// Invariant: The ancestor's timestamp >= current timestamp, 
 			// if it's already equal, then we don't care. 
-			assert cur_timestamp <= fork_id_cur;
-			if (cur_timestamp != fork_id_cur) {
-				val.put("shmem_timestamp",  fork_id_cur);
+			if (cur_timestamp.Compare(ts) != Comparison.GE) {
+				cur_timestamp.Union(ts);
 				cur = cur.parent;
 			}
 			
@@ -215,12 +248,37 @@ public class ShMemObject extends JSONObject {
 		}
 	}
 	
+	private void put_force(ShMemObject other) throws ShMemFailure {
+		for (Object k : other.keySet()) {
+			Object other_value = other.get((String)k);
+			if (this.containsKey(k)) {
+				Object this_value = this.get((String)k);
+				if ((other_value.getClass() != ShMemObject.class) || 
+					(this_value.getClass() != ShMemObject.class)) {
+					ITimestamp saved = now_;
+					now_ = (ITimestamp)((JSONObject)other.get(k)).get("shmem_timestamp");
+					this.put((String)k, other_value);
+					now_ = saved;
+				}
+				else {
+					((ShMemObject)this_value).put_force((ShMemObject)other_value);
+				}
+			}
+			else {
+				ITimestamp saved = now_;
+				now_ = (ITimestamp)((JSONObject)other.get(k)).get("shmem_timestamp");
+				this.put((String)k, other_value);
+				now_ = saved;
+			}
+		}
+	}
+	
 	//
 	// This method takes the serialized "release" deltas and merges them into the acquirer's 
 	// ShMemObject. orig_timestamp is the timestamp at which the acquirer forked the releasing
 	// process. 
 	//
-	public void merge(ShMemObject acquire, JSONObject release, long orig_timestamp) 
+	public void merge(JSONObject release, ITimestamp orig_timestamp) 
 		throws ShMemFailure {
 		
 		// Go through all the objects in the release set. 
@@ -231,20 +289,20 @@ public class ShMemObject extends JSONObject {
 			JSONObject release_cur = (JSONObject)release.get(k);
 			
 			// The acquirer also contains the current key. 
-			if (acquire.containsKey(k)) {
+			if (this.containsKey(k)) {
 				
 				// Pull the acquirer's timestamp from its wrapper. 
-				JSONObject acquire_cur = (JSONObject)acquire.get(k);
+				JSONObject acquire_cur = (JSONObject)this.get(k);
 				Object acquire_value = acquire_cur.get("value");
-				long acquire_timestamp = (Long)acquire_cur.get("shmem_timestamp");
+				ITimestamp acquire_timestamp = (ITimestamp)acquire_cur.get("shmem_timestamp");
 				
 				// Check if the releasing object contains a tombstone, if it does, then
 				// the timestamps should not conflict. 
-				if (release_cur.get("value") == null) {
+				if (!release_cur.containsKey("value")) {
 					
 					// The timestamps conflict: the acquiring process has modified/removed 
 					// this subtree, while the releasing process has removed it altogether. 
-					if (acquire_timestamp > orig_timestamp) {
+					if (orig_timestamp.Compare(acquire_timestamp) == Comparison.LT) {
 						throw new ShMemFailure("Merge failed!");
 					}
 					
@@ -252,7 +310,10 @@ public class ShMemObject extends JSONObject {
 					// safely remove it. The remove method will add a tombstone to the acquiring
 					// process' ShMemObject. 
 					else {
-						acquire.remove(key);
+						ITimestamp released_ts = 
+								VectorTimestamp.Deserialize((String)release_cur.get("shmem_timestamp"),
+															cur_node_);
+						this.delete(key, released_ts);
 					}
 				}
 				
@@ -261,18 +322,25 @@ public class ShMemObject extends JSONObject {
 				
 				// If the acquiring process hasn't modified the timestamp since the original 
 				// timestamp, we will always be safe. 
-				if (acquire_timestamp <= orig_timestamp) {
+				if (orig_timestamp.Compare(acquire_timestamp) == Comparison.GE) {
 					
 					// If the releasing process contains a leaf here, just put the leaf value
 					// into the acquiring process. 
 					if (release_value.getClass() != JSONObject.class) {
-						acquire.put(key,  release_value);
+						ITimestamp ts = (ITimestamp)VectorTimestamp.
+								Deserialize((String)release_cur.get("shmem_timestamp"), cur_node_);
+						insert(key, release_value, ts);
 					}
 					else {
-						// 	XXX: Bug here. We should be adding leaves here, not modifying the keys which
+						// 	XXX: Bug. We should be adding leaves here, not modifying the keys which
 						// have not been modified by both the acuiring process and releasing process. 
 						ShMemObject mod_child = json2shmem((JSONObject)release_value);
-						acquire.put(key,  mod_child);
+						if (acquire_value.getClass() == ShMemObject.class) {
+							((ShMemObject)acquire_value).put_force(mod_child);
+						}
+						else {
+							this.put(key,  mod_child);
+						}
 					}
 				}
 				
@@ -287,7 +355,7 @@ public class ShMemObject extends JSONObject {
 				// but this is just a serialized version of a ShMemObject). Recursively
 				// try to merge them. 
 				else {
-					merge((ShMemObject)acquire_value, (JSONObject)release_value, orig_timestamp);
+					((ShMemObject)acquire_value).merge((JSONObject)release_value, orig_timestamp);
 				}
 			}
 			
@@ -299,18 +367,18 @@ public class ShMemObject extends JSONObject {
 				// This condition garbage collects tombstones automatically. 
 				if (release_cur.get("value") != null) {
 					Object release_value = release_cur.get("value");
+					ITimestamp ts = (ITimestamp)VectorTimestamp.
+							Deserialize((String)release_cur.get("shmem_timestamp"), cur_node_);
 					
 					// If the releasing process contains an ShMemObject here, first convert from JSON
 					// to ShMemObject and then we can just "put" it
 					// into the acquiring process. 
 					if (release_value.getClass() == JSONObject.class) {
 						ShMemObject mod_child = json2shmem((JSONObject)release_value);
-						acquire.put(key, mod_child);
+						insert(key, mod_child, ts);
 					}
-					
-					// If it's a leaf, just put it into the acquiring process. 
 					else {
-						acquire.put(key, release_value);
+						insert(key, release_value, ts);
 					}
 				}
 			}
