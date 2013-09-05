@@ -53,7 +53,7 @@ public class JSONTuple {
 	
 	@Override
 	public int hashCode() {
-		return (Integer)this.m_tuple.get("hashcode");
+		return (Integer)this.m_tuple.get("hashvalue");
 	}
 	
 	public boolean notEquals(JSONTuple rhs) {
@@ -127,7 +127,7 @@ public class JSONTuple {
 	}
 	
 	public double distance(JSONTuple rhs) {
-		return Math.sqrt(distance(rhs));
+		return Math.sqrt(distance_squared(rhs));
 	}
 	
 	public double distance_squared(JSONTuple rhs) {

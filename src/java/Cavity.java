@@ -36,7 +36,7 @@ import java.util.Queue;
 
 
 public class Cavity {
-  protected Tuple center;
+  protected JSONTuple center;
   protected Node<Element> centerNode;
   protected Element centerElement;
   protected int dim;

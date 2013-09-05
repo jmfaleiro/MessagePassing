@@ -59,7 +59,7 @@ public class Mesh {
   }
 
 
-  private Tuple[] readNodes(String filename) throws Exception {
+  private JSONTuple[] readNodes(String filename) throws Exception {
     Scanner scanner = getScanner(filename + ".node");
 
     int ntups = scanner.nextInt();
@@ -67,20 +67,20 @@ public class Mesh {
     scanner.nextInt();
     scanner.nextInt();
 
-    Tuple[] tuples = new Tuple[ntups];
+    JSONTuple[] JSONTuples = new JSONTuple[ntups];
     for (int i = 0; i < ntups; i++) {
       int index = scanner.nextInt();
       double x = scanner.nextDouble();
       double y = scanner.nextDouble();
       scanner.nextDouble(); // z
-      tuples[index] = new Tuple(x, y, 0);
+      JSONTuples[index] = new JSONTuple(x, y, 0);
     }
 
-    return tuples;
+    return JSONTuples;
   }
 
 
-  private void readElements(EdgeGraph<Element, Element.Edge> mesh, String filename, Tuple[] tuples) throws Exception {
+  private void readElements(EdgeGraph<Element, Element.Edge> mesh, String filename, JSONTuple[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".ele");
 
     int nels = scanner.nextInt();
@@ -92,7 +92,7 @@ public class Mesh {
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       int n3 = scanner.nextInt();
-      elements[index] = new Element(tuples[n1], tuples[n2], tuples[n3]);
+      elements[index] = new Element(JSONTuples[n1], JSONTuples[n2], JSONTuples[n3]);
       Node<Element> temp =  addElement(mesh, elements[index]);
       if (elements[index].isBad()) {
     	  bad_nodes.addFirst(temp);
@@ -101,7 +101,7 @@ public class Mesh {
   }
 
 
-  private void readPoly(EdgeGraph<Element, Element.Edge> mesh, String filename, Tuple[] tuples) throws Exception {
+  private void readPoly(EdgeGraph<Element, Element.Edge> mesh, String filename, JSONTuple[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".poly");
 
     scanner.nextInt();
@@ -116,7 +116,7 @@ public class Mesh {
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       scanner.nextInt();
-      segments[index] = new Element(tuples[n1], tuples[n2]);
+      segments[index] = new Element(JSONTuples[n1], JSONTuples[n2]);
       Node<Element> temp = addElement(mesh, segments[index]);
       if (segments[index].isBad()) {
     	  bad_nodes.addFirst(temp);
@@ -128,9 +128,9 @@ public class Mesh {
   // .poly contains the perimeter of the mesh; edges basically, which is why it
   // contains pairs of nodes
   public void read(EdgeGraph<Element, Element.Edge> mesh, String basename) throws Exception {
-    Tuple[] tuples = readNodes(basename);
-    readElements(mesh, basename, tuples);
-    readPoly(mesh, basename, tuples);
+    JSONTuple[] JSONTuples = readNodes(basename);
+    readElements(mesh, basename, JSONTuples);
+    readPoly(mesh, basename, JSONTuples);
   }
 
 

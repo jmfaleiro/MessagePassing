@@ -81,11 +81,14 @@ public class SerialDelaunayrefinement {
     }
     EdgeGraph<Element, Element.Edge> mesh = new UndirectedEdgeGraph<Element, Element.Edge>();
     LinkedList<Node<Element>> worklist;
+    new Mesh().read(mesh,  args[0]);
+    /*
     try {
       new Mesh().read(mesh, args[0]);
     } catch (Exception e) {
       throw new Error(e);
     }
+    */
     worklist = Mesh.getBad(mesh);
     Cavity cavity = new Cavity(mesh);
     if (isFirstRun) {

@@ -28,20 +28,20 @@ public class Element {
   private final boolean bObtuse;
   private final boolean bBad;
 
-  private final Tuple obtuse;
-  private final Tuple[] coords;
+  private final JSONTuple obtuse;
+  private final JSONTuple[] coords;
   private final Element.Edge[] edges;
   private final int dim;
 
-  private final Tuple center;
+  private final JSONTuple center;
   private final double radius_squared;
 
   private static final double MINANGLE = 30.0;
 
 
-  public Element(Tuple a, Tuple b, Tuple c) {
+  public Element(JSONTuple a, JSONTuple b, JSONTuple c) {
     dim = 3;
-    coords = new Tuple[3];
+    coords = new JSONTuple[3];
     coords[0] = a;
     coords[1] = b;
     coords[2] = c;
@@ -62,12 +62,12 @@ public class Element {
     edges[2] = new Element.Edge(coords[2], coords[0]);
     boolean l_bObtuse = false;
     boolean l_bBad = false;
-    Tuple l_obtuse = null;
+    JSONTuple l_obtuse = null;
     for (int i = 0; i < 3; i++) {
       double angle = getAngle(i);
       if (angle > 90.1) {
         l_bObtuse = true;
-        l_obtuse = new Tuple(coords[i]);
+        l_obtuse = new JSONTuple(coords[i]);
       } else if (angle < MINANGLE) {
         l_bBad = true;
       }
@@ -75,8 +75,8 @@ public class Element {
     bBad = l_bBad;
     bObtuse = l_bObtuse;
     obtuse = l_obtuse;
-    Tuple x = b.subtract(a);
-    Tuple y = c.subtract(a);
+    JSONTuple x = b.subtract(a);
+    JSONTuple y = c.subtract(a);
     double xlen = a.distance(b);
     double ylen = a.distance(c);
     double cosine = x.dotp(y) / (xlen * ylen);
@@ -86,16 +86,16 @@ public class Element {
     double t = plen * sine_sq;
     double wp = (plen - cosine) / (2 * t);
     double wb = 0.5 - (wp * s);
-    Tuple tmpval = a.scale(1 - wb - wp);
+    JSONTuple tmpval = a.scale(1 - wb - wp);
     tmpval = tmpval.add(b.scale(wb));
     center = tmpval.add(c.scale(wp));
     radius_squared = center.distance_squared(a);
   }
 
 
-  public Element(Tuple a, Tuple b) {
+  public Element(JSONTuple a, JSONTuple b) {
     dim = 2;
-    coords = new Tuple[2];
+    coords = new JSONTuple[2];
     coords[0] = a;
     coords[1] = b;
     if (b.lessThan(a)) {
@@ -113,8 +113,8 @@ public class Element {
   }
 
   public static class Edge {
-    private final Tuple p1;
-    private final Tuple p2;
+    private final JSONTuple p1;
+    private final JSONTuple p2;
     private final int hashvalue;
 
 
@@ -125,7 +125,7 @@ public class Element {
     }
 
 
-    public Edge(Tuple a, Tuple b) {
+    public Edge(JSONTuple a, JSONTuple b) {
       if (a.lessThan(b)) {
         p1 = a;
         p2 = b;
@@ -178,7 +178,7 @@ public class Element {
     }
 
 
-    public Tuple getPoint(int i) {
+    public JSONTuple getPoint(int i) {
       if (i == 0) {
         return p1;
       } else if (i == 1) {
@@ -286,12 +286,12 @@ public class Element {
   }
 
 
-  public Tuple center() {
+  public JSONTuple center() {
     return center;
   }
 
 
-  public boolean inCircle(Tuple p) {
+  public boolean inCircle(JSONTuple p) {
     double ds = center.distance_squared(p);
     return ds <= radius_squared;
   }
@@ -306,10 +306,10 @@ public class Element {
     if (k == dim) {
       k = 0;
     }
-    Tuple a = coords[i];
-    Tuple b = coords[j];
-    Tuple c = coords[k];
-    return Tuple.angle(b, a, c);
+    JSONTuple a = coords[i];
+    JSONTuple b = coords[j];
+    JSONTuple c = coords[k];
+    return JSONTuple.angle(b, a, c);
   }
 
 
@@ -318,12 +318,12 @@ public class Element {
   }
 
 
-  public Tuple getPoint(int i) {
+  public JSONTuple getPoint(int i) {
     return coords[i];
   }
 
 
-  public Tuple getObtuse() {
+  public JSONTuple getObtuse() {
     return obtuse;
   }
 
