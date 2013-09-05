@@ -5,17 +5,22 @@
 
 package DelaunayRefinement.src.java;
 
-import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 
 public class JSONTuple {
 	
-	private final JSONObject m_tuple;
+	private static final int x_index = 0;
+	private static final int y_index = 1;
+	private static final int z_index = 2;
+	private static final int hash_index = 3;
+	
+	private final JSONArray m_tuple;
 	
 	public JSONTuple(double a, double b, double c) {
-		m_tuple = new JSONObject();
-		m_tuple.put("x", a);
-		m_tuple.put("y", b);
-		m_tuple.put("z", c);
+		m_tuple = new JSONArray();
+		m_tuple.add(a);
+		m_tuple.add(b);
+		m_tuple.add(c);
 		
 		int tmphashvalue = 17;
 	    long tmp = Double.doubleToLongBits(a);
@@ -25,21 +30,21 @@ public class JSONTuple {
 	    tmp = Double.doubleToLongBits(c);
 	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
 	    
-	    m_tuple.put("hashvalue",  tmphashvalue);
+	    m_tuple.add(tmphashvalue);
 	}
 	
 	public JSONTuple(JSONTuple other) {
-		m_tuple = new JSONObject();
+		m_tuple = new JSONArray();
 		
-		double x_other = (Double)other.m_tuple.get("x");
-		double y_other = (Double)other.m_tuple.get("y");
-		double z_other = (Double)other.m_tuple.get("z");
-		int hash_other = (Integer)other.m_tuple.get("hashvalue");
+		double x_other = (Double)other.m_tuple.get(x_index);
+		double y_other = (Double)other.m_tuple.get(y_index);
+		double z_other = (Double)other.m_tuple.get(z_index);
+		int hash_other = (Integer)other.m_tuple.get(hash_index);
 		
-		m_tuple.put("x",  x_other);
-		m_tuple.put("y", y_other);
-		m_tuple.put("z",  z_other);
-		m_tuple.put("hashvalue", hash_other);
+		m_tuple.add(x_other);
+		m_tuple.add(y_other);
+		m_tuple.add(z_other);
+		m_tuple.add(hash_other);
 	}
 	
 	@Override
@@ -53,7 +58,7 @@ public class JSONTuple {
 	
 	@Override
 	public int hashCode() {
-		return (Integer)this.m_tuple.get("hashvalue");
+		return (Integer)this.m_tuple.get(hash_index);
 	}
 	
 	public boolean notEquals(JSONTuple rhs) {
@@ -61,55 +66,55 @@ public class JSONTuple {
 	}
 	
 	public boolean lessThan(JSONTuple rhs) {
-		JSONObject rhs_obj = rhs.m_tuple;
+		JSONArray rhs_obj = rhs.m_tuple;
 		return JSONTuple.LessThan(this.m_tuple, rhs_obj);
 	}
 	
 	public boolean greaterThan(JSONTuple rhs) {
-		JSONObject rhs_obj = rhs.m_tuple;
+		JSONArray rhs_obj = rhs.m_tuple;
 		return JSONTuple.GreaterThan(this.m_tuple,  rhs_obj);
 	}
 	
 	public JSONTuple add(JSONTuple rhs) {
-		double x1 = (Double)rhs.m_tuple.get("x");
-		double y1 = (Double)rhs.m_tuple.get("y");
-		double z1 = (Double)rhs.m_tuple.get("z");
+		double x1 = (Double)rhs.m_tuple.get(x_index);
+		double y1 = (Double)rhs.m_tuple.get(y_index);
+		double z1 = (Double)rhs.m_tuple.get(z_index);
 		
-		x1 += (Double)m_tuple.get("x");
-		y1 += (Double)m_tuple.get("y");
-		z1 += (Double)m_tuple.get("z");
+		x1 += (Double)m_tuple.get(x_index);
+		y1 += (Double)m_tuple.get(y_index);
+		z1 += (Double)m_tuple.get(z_index);
 		
 		return new JSONTuple(x1, y1, z1);
 	}
 	
 	public JSONTuple subtract(JSONTuple rhs) {
-		double x1 = (Double)m_tuple.get("x");
-		double y1 = (Double)m_tuple.get("y");
-		double z1 = (Double)m_tuple.get("z");
+		double x1 = (Double)m_tuple.get(x_index);
+		double y1 = (Double)m_tuple.get(y_index);
+		double z1 = (Double)m_tuple.get(z_index);
 		
-		x1 -= (Double)rhs.m_tuple.get("x");
-		y1 -= (Double)rhs.m_tuple.get("y");
-		z1 -= (Double)rhs.m_tuple.get("z");
+		x1 -= (Double)rhs.m_tuple.get(x_index);
+		y1 -= (Double)rhs.m_tuple.get(y_index);
+		z1 -= (Double)rhs.m_tuple.get(z_index);
 		
 		return new JSONTuple(x1, y1, z1);
 	}
 	
 	public double dotp(JSONTuple rhs) {
-		double x1 = (Double)rhs.m_tuple.get("x");
-		double y1 = (Double)rhs.m_tuple.get("y");
-		double z1 = (Double)rhs.m_tuple.get("z");
+		double x1 = (Double)rhs.m_tuple.get(x_index);
+		double y1 = (Double)rhs.m_tuple.get(y_index);
+		double z1 = (Double)rhs.m_tuple.get(z_index);
 		
-		double x2 = (Double)m_tuple.get("x");
-		double y2 = (Double)m_tuple.get("y");
-		double z2 = (Double)m_tuple.get("z");
+		double x2 = (Double)m_tuple.get(x_index);
+		double y2 = (Double)m_tuple.get(y_index);
+		double z2 = (Double)m_tuple.get(z_index);
 		
 		return x1*x2 + y1*y2 + z1*z2;
 	}
 	
 	public JSONTuple scale(double value) {
-		double x1 = (Double)m_tuple.get("x");
-		double y1 = (Double)m_tuple.get("y");
-		double z1 = (Double)m_tuple.get("z");
+		double x1 = (Double)m_tuple.get(x_index);
+		double y1 = (Double)m_tuple.get(y_index);
+		double z1 = (Double)m_tuple.get(z_index);
 		
 		return new JSONTuple(value*x1, value*y1, value*z1);
 	}
@@ -141,7 +146,7 @@ public class JSONTuple {
 	
 	@Override
 	public String toString() {
-		return new String("(" + (Double)m_tuple.get("x") + ", " + (Double)m_tuple.get("y") + ", " + (Double)m_tuple.get("z") + ")");
+		return new String("(" + (Double)m_tuple.get(x_index) + ", " + (Double)m_tuple.get(y_index) + ", " + (Double)m_tuple.get(z_index) + ")");
 	}
 	
 	public static int cmp(JSONTuple a, JSONTuple b) {
@@ -156,14 +161,14 @@ public class JSONTuple {
 		return b.angle(a, c);
 	}
 	
-	public static JSONObject CreateTuple(double a, double b, double c){
+	public static JSONArray CreateTuple(double a, double b, double c){
 		
-		JSONObject new_coord = new JSONObject();
+		JSONArray new_coord = new JSONArray();
 		
 		// Add the coordinates to the JSONObject. 
-		new_coord.put("x", a);
-		new_coord.put("y", b);
-		new_coord.put("z", c);
+		new_coord.add(a);
+		new_coord.add(b);
+		new_coord.add(c);
 		
 		// Compute hash value. 
 		int tmphashvalue = 17;
@@ -173,51 +178,51 @@ public class JSONTuple {
 	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
 	    tmp = Double.doubleToLongBits(c);
 	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
-	    new_coord.put("hashvalue", tmphashvalue);
+	    new_coord.add(tmphashvalue);
 	    
 	    return new_coord;
 	}
 	
-	public static double Angle(JSONObject vertex, JSONObject end1, JSONObject end2) {
-		double x_diff1 = (Double)end1.get("x") - (Double)vertex.get("x");
-		double y_diff1 = (Double)end1.get("y") - (Double)vertex.get("y");
-		double z_diff1 = (Double)end1.get("z") - (Double)vertex.get("z");
+	public static double Angle(JSONArray vertex, JSONArray end1, JSONArray end2) {
+		double x_diff1 = (Double)end1.get(0) - (Double)vertex.get(0);
+		double y_diff1 = (Double)end1.get(1) - (Double)vertex.get(1);
+		double z_diff1 = (Double)end1.get(2) - (Double)vertex.get(2);
 		
-		double x_diff2 = (Double)end2.get("x") - (Double)vertex.get("x");
-		double y_diff2 = (Double)end2.get("y") - (Double)vertex.get("y");
-		double z_diff2 = (Double)end2.get("z") - (Double)vertex.get("z");
+		double x_diff2 = (Double)end2.get(0) - (Double)vertex.get(0);
+		double y_diff2 = (Double)end2.get(1) - (Double)vertex.get(1);
+		double z_diff2 = (Double)end2.get(2) - (Double)vertex.get(2);
 		
 		double diff_dotp = x_diff1 * x_diff2 + y_diff1 * y_diff2 + z_diff1 * z_diff2;
 		double d = diff_dotp / (Math.sqrt(DistanceSquared(vertex, end1) * DistanceSquared(vertex, end2)));
 		return (180 / Math.PI) * Math.acos(d);
 	}
 	
-	public static double Distance(JSONObject first, JSONObject second) {
+	public static double Distance(JSONArray first, JSONArray second) {
 		return Math.sqrt(DistanceSquared(first, second));
 	}
 	
-	public static double DistanceSquared(JSONObject first, JSONObject second) {
-		double x_diff = (Double)first.get("x") - (Double)second.get("x");
-		double y_diff = (Double)first.get("y") - (Double)second.get("y");
-		double z_diff = (Double)first.get("z") - (Double)second.get("z");
+	public static double DistanceSquared(JSONArray first, JSONArray second) {
+		double x_diff = (Double)first.get(0) - (Double)second.get(0);
+		double y_diff = (Double)first.get(1) - (Double)second.get(1);
+		double z_diff = (Double)first.get(2) - (Double)second.get(2);
 		
 		return x_diff * x_diff + y_diff * y_diff + z_diff * z_diff;
 	}
 	
-	private static double dotp(JSONObject first, JSONObject second) {
-		return (((Double)first.get("x") * (Double)second.get("x")) +
-				((Double)first.get("y") * (Double)second.get("y")) +
-				((Double)first.get("z") * (Double)second.get("z")));
+	private static double dotp(JSONArray first, JSONArray second) {
+		return (((Double)first.get(0) * (Double)second.get(0)) +
+				((Double)first.get(1) * (Double)second.get(1)) +
+				((Double)first.get(2) * (Double)second.get(2)));
 	}
 	
-	public static boolean GreaterThan(JSONObject coord1, JSONObject coord2) {
-		double x1 = (Double)coord1.get("x");
-		double y1 = (Double)coord1.get("y");
-		double z1 = (Double)coord1.get("z");
+	public static boolean GreaterThan(JSONArray coord1, JSONArray coord2) {
+		double x1 = (Double)coord1.get(0);
+		double y1 = (Double)coord1.get(1);
+		double z1 = (Double)coord1.get(2);
 		
-		double x2 = (Double)coord2.get("x");
-		double y2 = (Double)coord2.get("y");
-		double z2 = (Double)coord2.get("z");
+		double x2 = (Double)coord2.get(0);
+		double y2 = (Double)coord2.get(1);
+		double z2 = (Double)coord2.get(2);
 		
 		if (x1 > x2) {
 			return true;
@@ -242,14 +247,14 @@ public class JSONTuple {
 		return false;	
 	}
 	
-	public static boolean LessThan(JSONObject coord1, JSONObject coord2) {
-		double x1 = (Double)coord1.get("x");
-		double y1 = (Double)coord1.get("y");
-		double z1 = (Double)coord1.get("z");
+	public static boolean LessThan(JSONArray coord1, JSONArray coord2) {
+		double x1 = (Double)coord1.get(0);
+		double y1 = (Double)coord1.get(1);
+		double z1 = (Double)coord1.get(2);
 		
-		double x2 = (Double)coord2.get("x");
-		double y2 = (Double)coord2.get("y");
-		double z2 = (Double)coord2.get("z");
+		double x2 = (Double)coord2.get(0);
+		double y2 = (Double)coord2.get(1);
+		double z2 = (Double)coord2.get(2);
 		
 		if (x1 < x2) {
 			return true;
@@ -274,14 +279,14 @@ public class JSONTuple {
 		return false;	
 	}
 
-	private static boolean Equals(JSONObject coord1, JSONObject coord2) {
-		double x1 = (Double)coord1.get("x");
-		double y1 = (Double)coord1.get("y");
-		double z1 = (Double)coord1.get("z");
+	private static boolean Equals(JSONArray coord1, JSONArray coord2) {
+		double x1 = (Double)coord1.get(0);
+		double y1 = (Double)coord1.get(1);
+		double z1 = (Double)coord1.get(2);
 		
-		double x2 = (Double)coord2.get("x");
-		double y2 = (Double)coord2.get("y");
-		double z2 = (Double)coord2.get("z");
+		double x2 = (Double)coord2.get(0);
+		double y2 = (Double)coord2.get(1);
+		double z2 = (Double)coord2.get(2);
 		
 		return (x1 == x2) && (y1 == y2) && (z1 == z2);
 	}
