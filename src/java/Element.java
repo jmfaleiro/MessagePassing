@@ -24,6 +24,8 @@ File: Element.java
 
 package DelaunayRefinement.src.java;
 
+import org.json.simple.JSONObject;
+
 public class Element {
   private final boolean bObtuse;
   private final boolean bBad;
@@ -75,23 +77,56 @@ public class Element {
     bBad = l_bBad;
     bObtuse = l_bObtuse;
     obtuse = l_obtuse;
-    JSONTuple x = b.subtract(a);
-    JSONTuple y = c.subtract(a);
-    double xlen = a.distance(b);
-    double ylen = a.distance(c);
-    double cosine = x.dotp(y) / (xlen * ylen);
-    double sine_sq = 1.0 - cosine * cosine;
-    double plen = ylen / xlen;
-    double s = plen * cosine;
-    double t = plen * sine_sq;
-    double wp = (plen - cosine) / (2 * t);
-    double wb = 0.5 - (wp * s);
-    JSONTuple tmpval = a.scale(1 - wb - wp);
-    tmpval = tmpval.add(b.scale(wb));
-    center = tmpval.add(c.scale(wp));
-    radius_squared = center.distance_squared(a);
+    
+    center = getCenter(coords[0], coords[1], coords[2]);
+    radius_squared = coords[0].distance_squared(center);
   }
 
+  private JSONTuple getCenter(JSONTuple coord0, 
+		  				 	  JSONTuple coord1, 
+		  				 	  JSONTuple coord2) {
+	  
+	  double x1 = (Double)coord1.get(JSONTuple.x_index) - (Double)coord0.get(JSONTuple.x_index);
+		double y1 = (Double)coord1.get(JSONTuple.y_index) - (Double)coord0.get(JSONTuple.y_index);
+		double z1 = (Double)coord1.get(JSONTuple.z_index) - (Double)coord0.get(JSONTuple.z_index);
+		
+		double x2 = (Double)coord2.get(JSONTuple.x_index) - (Double)coord0.get(JSONTuple.x_index);
+		double y2 = (Double)coord2.get(JSONTuple.y_index) - (Double)coord0.get(JSONTuple.y_index);
+		double z2 = (Double)coord2.get(JSONTuple.z_index) - (Double)coord0.get(JSONTuple.z_index);
+		
+		double len1 = coord0.distance(coord1);
+		double len2 = coord0.distance(coord2);
+		
+		double cosine = (x1*x2 + y1*y2 + z1*z2) / (len1 * len2);
+		double sine_sq = 1.0 - cosine * cosine;
+	    double plen = len2/len1;
+	    double s = plen * cosine;
+	    double t = plen * sine_sq;
+	    double wp = (plen - cosine) / (2 * t);
+	    double wb = 0.5 - (wp * s);
+	    
+	    double x_center = (Double)coord0.get(JSONTuple.x_index) * (1 - wb - wp);
+	    double y_center = (Double)coord0.get(JSONTuple.y_index) * (1 - wb - wp);
+	    double z_center = (Double)coord0.get(JSONTuple.z_index) * (1 - wb - wp);
+	    
+	    x_center += (Double)coord1.get(JSONTuple.x_index) * wb;
+	    y_center += (Double)coord1.get(JSONTuple.y_index) * wb;
+	    z_center += (Double)coord1.get(JSONTuple.z_index) * wb;
+	    
+	    x_center += (Double)coord2.get(JSONTuple.x_index) * wp;
+	    y_center += (Double)coord2.get(JSONTuple.y_index) * wp;
+	    z_center += (Double)coord2.get(JSONTuple.z_index) * wp;
+	    
+	    return new JSONTuple(x_center, y_center, z_center);
+  }
+  
+  private JSONTuple getCenter(JSONTuple coord0, JSONTuple coord1) {
+	  double x = (coord0.get(JSONTuple.x_index) + coord1.get(JSONTuple.x_index)) / 2.0;
+	  double y = (coord0.get(JSONTuple.y_index) + coord1.get(JSONTuple.y_index)) / 2.0;
+	  double z = (coord0.get(JSONTuple.z_index) + coord1.get(JSONTuple.z_index)) / 2.0; 
+	  
+	  return new JSONTuple(x, y, z);
+  }
 
   public Element(JSONTuple a, JSONTuple b) {
     dim = 2;
@@ -108,7 +143,7 @@ public class Element {
     bBad = false;
     bObtuse = false;
     obtuse = null;
-    center = (a.add(b)).scale(0.5);
+    center = getCenter(coords[0], coords[1]);
     radius_squared = center.distance_squared(a);
   }
 

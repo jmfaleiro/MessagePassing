@@ -9,10 +9,10 @@ import org.json.simple.JSONArray;
 
 public class JSONTuple {
 	
-	private static final int x_index = 0;
-	private static final int y_index = 1;
-	private static final int z_index = 2;
-	private static final int hash_index = 3;
+	public static final int x_index = 0;
+	public static final int y_index = 1;
+	public static final int z_index = 2;
+	public static final int hash_index = 3;
 	
 	private final JSONArray m_tuple;
 	
@@ -289,5 +289,9 @@ public class JSONTuple {
 		double z2 = (Double)coord2.get(2);
 		
 		return (x1 == x2) && (y1 == y2) && (z1 == z2);
+	}
+	
+	public double get(int index) {
+		return (Double)m_tuple.get(index);
 	}
 }
