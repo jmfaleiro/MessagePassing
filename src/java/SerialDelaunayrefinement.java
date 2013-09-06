@@ -79,9 +79,11 @@ public class SerialDelaunayrefinement {
     if (args.length < 1) {
       throw new Error("Arguments: <input file> [verify]");
     }
-    EdgeGraph<Element, Element.Edge> mesh = new UndirectedEdgeGraph<Element, Element.Edge>();
-    LinkedList<Node<Element>> worklist;
-    new Mesh().read(mesh,  args[0]);
+    // EdgeGraph<Element, Element.Edge> mesh = new UndirectedEdgeGraph<Element, Element.Edge>();
+    LinkedList<Integer> worklist;
+    Mesh mesh = new Mesh();
+    mesh.read(args[0]);
+    
     /*
     try {
       new Mesh().read(mesh, args[0]);
@@ -89,7 +91,7 @@ public class SerialDelaunayrefinement {
       throw new Error(e);
     }
     */
-    worklist = Mesh.getBad(mesh);
+    worklist = mesh.getBad();
     Cavity cavity = new Cavity(mesh);
     if (isFirstRun) {
       System.err.println("configuration: " + mesh.getNumNodes() + " total triangles, " + worklist.size() + " bad triangles");
@@ -100,8 +102,8 @@ public class SerialDelaunayrefinement {
     int iter = 0;
     
     while (!worklist.isEmpty()) {
-      Node<Element> bad_element = worklist.removeFirst();
-      if ((bad_element != null) && (mesh.containsNode(bad_element))) {
+      int bad_element = worklist.removeFirst();
+      if (mesh.containsNode(bad_element)) {
     	  
     	  if (iter == 17) {
     		  System.out.println("blah");
@@ -110,49 +112,49 @@ public class SerialDelaunayrefinement {
         cavity.initialize(bad_element);
         cavity.build();
         cavity.update();
+        
         // remove the old data
-        for (Node<Element> node : cavity.getPre().getNodes()) {
+        for (int node : cavity.getPre().getNodes()) {
           mesh.removeNode(node);
         }
-        // add new data
-        for (Node<Element> node : cavity.getPost().getNodes()) {
-          mesh.addNode(node);
-        }
-        for (Edge<Element.Edge> edge : cavity.getPost().getEdges()) {
-          mesh.addEdge(edge);
-        }
         
-        for (Node<Element> bad : cavity.getPost().newBad(mesh)) {
+        for (int bad : cavity.getPost().newBad()) {
         	worklist.addLast(bad);
         }
         
         ++iter;
-        System.out.println(iter);
+        //System.out.println(iter);
         
       }
     }
     long time = Time.elapsedTime(id);
     System.err.println("runtime: " + time + " ms");
 
+    /*
     if (isFirstRun && (args.length > 1)) {
       verify(mesh);
     }
+    */
 
     isFirstRun = false;
     return time;
   }
-
-
+ /*
+  
   @SuppressWarnings("unchecked")
+  
   public static void verify(Object res) {
     EdgeGraph<Element, Element.Edge> result = (EdgeGraph<Element, Element.Edge>) res;
     if (!Mesh.verify(result)) {
       throw new IllegalStateException("refinement failed.");
     }
-    int size = Mesh.getBad(result).size();
+    
+    int size = Mesh.getBad().size();
     if (size != 0) {
       throw new IllegalStateException("refinement failed\n" + "still have " + size + " bad triangles left.\n");
     }
     System.out.println("OK");
+    
   }
+  */
 }

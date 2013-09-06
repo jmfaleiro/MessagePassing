@@ -30,18 +30,34 @@ public class Element {
   private final boolean bObtuse;
   private final boolean bBad;
 
-  private final JSONTuple obtuse;
+  private final int obtuse;
   private final JSONTuple[] coords;
   private final Element.Edge[] edges;
   private final int dim;
 
   private final JSONTuple center;
   private final double radius_squared;
+  
+  private final int index;
+  private boolean dead;
+  
+  private final int[] neighbors;
 
   private static final double MINANGLE = 30.0;
 
+  public boolean isDead() {
+	  return dead;
+  }
+  
+  public void kill() {
+	  dead = true;
+  }
 
-  public Element(JSONTuple a, JSONTuple b, JSONTuple c) {
+  public Element(JSONTuple a, JSONTuple b, JSONTuple c, Mesh nodes) {
+	 
+	 index = nodes.getNextIndex();
+	 dead = false;
+	  
     dim = 3;
     coords = new JSONTuple[3];
     coords[0] = a;
@@ -64,12 +80,12 @@ public class Element {
     edges[2] = new Element.Edge(coords[2], coords[0]);
     boolean l_bObtuse = false;
     boolean l_bBad = false;
-    JSONTuple l_obtuse = null;
+    int l_obtuse = -1;
     for (int i = 0; i < 3; i++) {
       double angle = getAngle(i);
       if (angle > 90.1) {
         l_bObtuse = true;
-        l_obtuse = new JSONTuple(coords[i]);
+        l_obtuse = (i + 1) % 3;
       } else if (angle < MINANGLE) {
         l_bBad = true;
       }
@@ -80,8 +96,38 @@ public class Element {
     
     center = getCenter(coords[0], coords[1], coords[2]);
     radius_squared = coords[0].distance_squared(center);
+    
+    neighbors = new int[3];
+    for (int i = 0; i < 3; ++i) {
+    	neighbors[i] = -1;
+    }
+    
+    nodes.putNode(index,  this);
   }
-
+  
+  public int getObtuseNeighbor() throws Exception {
+	  if (bObtuse) {
+		  return neighbors[obtuse];
+	  }
+	  else {
+		  throw new Exception("Element is not obtuse!");
+	  }
+  }
+  
+  public int getNeighbor(int index) {
+	  return neighbors[index];
+  }
+  
+  public int[] getNeighbors() {
+	  return neighbors;
+  }
+  
+  private int grabIndex(JSONObject nodes) {
+	  int current_index = (Integer)nodes.get("current");
+	  nodes.put("current",  current_index+1);
+	  return current_index;
+  }
+  
   private JSONTuple getCenter(JSONTuple coord0, 
 		  				 	  JSONTuple coord1, 
 		  				 	  JSONTuple coord2) {
@@ -128,7 +174,10 @@ public class Element {
 	  return new JSONTuple(x, y, z);
   }
 
-  public Element(JSONTuple a, JSONTuple b) {
+  public Element(JSONTuple a, JSONTuple b, Mesh nodes) {
+	  index = nodes.getNextIndex();
+	  dead = false;
+	  
     dim = 2;
     coords = new JSONTuple[2];
     coords[0] = a;
@@ -142,11 +191,29 @@ public class Element {
     edges[1] = new Element.Edge(coords[1], coords[0]);
     bBad = false;
     bObtuse = false;
-    obtuse = null;
+    obtuse = -1;
     center = getCenter(coords[0], coords[1]);
     radius_squared = center.distance_squared(a);
+    
+    neighbors = new int[1];
+    neighbors[0] = -1;
+    
+    nodes.putNode(index,  this);
+  }
+  
+  public void resolveNeighbor(Element neighbor) throws Exception {
+	  int related_index = isRelated(neighbor);
+	  if (related_index == -1) {
+		  throw new Exception("Called with unrelated elements!");
+	  }
+	  
+	  neighbors[related_index] = neighbor.index;
   }
 
+  public void setNeighbor(int index, int value) {
+	  neighbors[index] = value;
+  }
+  
   public static class Edge {
     private final JSONTuple p1;
     private final JSONTuple p2;
@@ -231,15 +298,7 @@ public class Element {
     }
   }
 
-
-  public Element getCopy() {
-    if (dim == 3) {
-      return new Element(coords[0], coords[1], coords[2]);
-    } else {
-      return new Element(coords[0], coords[1]);
-    }
-  }
-
+  
 
   public boolean lessThan(Element e) {
     if (dim < e.getDim()) {
@@ -257,53 +316,52 @@ public class Element {
     }
     return false;
   }
-
-
-  public boolean isRelated(Element e) {
+  
+  public int isRelated(Element e) {
     int edim = e.getDim();
     Element.Edge my_edge, e_edge0, e_edge1, e_edge2 = null;
     my_edge = edges[0];
     e_edge0 = e.edges[0];
     if (my_edge.equals(e_edge0)) {
-      return true;
+      return 0;
     }
     e_edge1 = e.edges[1];
     if (my_edge.equals(e_edge1)) {
-      return true;
+      return 0;
     }
     if (edim == 3) {
       e_edge2 = e.edges[2];
       if (my_edge.equals(e_edge2)) {
-        return true;
+        return 0;
       }
     }
     my_edge = edges[1];
     if (my_edge.equals(e_edge0)) {
-      return true;
+      return 1;
     }
     if (my_edge.equals(e_edge1)) {
-      return true;
+      return 1;
     }
     if (edim == 3) {
       if (my_edge.equals(e_edge2)) {
-        return true;
+        return 1;
       }
     }
     if (dim == 3) {
       my_edge = edges[2];
       if (my_edge.equals(e_edge0)) {
-        return true;
+        return 2;
       }
       if (my_edge.equals(e_edge1)) {
-        return true;
+        return 2;
       }
       if (edim == 3) {
         if (my_edge.equals(e_edge2)) {
-          return true;
+          return 2;
         }
       }
     }
-    return false;
+    return -1;
   }
 
 
@@ -347,7 +405,10 @@ public class Element {
     return JSONTuple.angle(b, a, c);
   }
 
-
+  public int getIndex() {
+	  return this.index;
+  }
+  
   public Element.Edge getEdge(int i) {
     return edges[i];
   }
@@ -357,12 +418,7 @@ public class Element {
     return coords[i];
   }
 
-
-  public JSONTuple getObtuse() {
-    return obtuse;
-  }
-
-
+  
   // should the node be processed?
   public boolean isBad() {
     return bBad;

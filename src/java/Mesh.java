@@ -38,18 +38,39 @@ import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Stack;
 
+import org.json.simple.JSONObject;
+
 
 public class Mesh {
+	
+  public  final JSONObject graph = new JSONObject();	
   protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
-  protected static final LinkedList<Node<Element>> bad_nodes = new LinkedList<Node<Element>>();
+  protected final LinkedList<Integer> bad_nodes = new LinkedList<Integer>();
 
+  public Mesh() {
+	  graph.put("current_index",  0);
+  }
+  
   @SuppressWarnings("unchecked")
-  public static LinkedList<Node<Element>> getBad(EdgeGraph<Element, Element.Edge> mesh) {
-    
+  public LinkedList<Integer> getBad() {
     return bad_nodes;
   }
+  
+  public void putNode(int index, Element value) {
+	  graph.put(index,  value);
+  }
+  
+  public int getNumNodes() {
+	  return (Integer)graph.get("current_index");
+  }
 
-
+  public int getNextIndex() {
+	  int current_index = (Integer)graph.get("current_index");
+	  graph.put("current_index", current_index+1);
+	  return current_index;
+  }
+  
+  
   private static Scanner getScanner(String filename) throws Exception {
     try {
       return new Scanner(new GZIPInputStream(new FileInputStream(filename + ".gz")));
@@ -80,9 +101,12 @@ public class Mesh {
   }
 
 
-  private void readElements(EdgeGraph<Element, Element.Edge> mesh, String filename, JSONTuple[] JSONTuples) throws Exception {
+  private HashMap<Element.Edge, Integer> readElements(String filename, JSONTuple[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".ele");
 
+    HashMap<Element.Edge, Integer> unresolved_edges = new HashMap<Element.Edge, Integer>();
+    
+    
     int nels = scanner.nextInt();
     scanner.nextInt();
     scanner.nextInt();
@@ -92,16 +116,47 @@ public class Mesh {
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       int n3 = scanner.nextInt();
-      elements[index] = new Element(JSONTuples[n1], JSONTuples[n2], JSONTuples[n3]);
-      Node<Element> temp =  addElement(mesh, elements[index]);
+      elements[index] = new Element(JSONTuples[n1], JSONTuples[n2], JSONTuples[n3], this);
+      int graph_index = elements[index].getIndex();
+      
       if (elements[index].isBad()) {
-    	  bad_nodes.addFirst(temp);
+    	  bad_nodes.addFirst(graph_index);
       }
+      
+      tryResolveEdges(elements[index], unresolved_edges);
     }
+    
+    return unresolved_edges;
   }
 
+  private void tryResolveEdges(Element elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
+	  
+	  // 1 edge if it's a segment, otherwise 3. 
+	  int n_edges = 2*elem.getDim() - 3;
+	  
+	  for (int i = 0; i < n_edges; ++i) {
+		  Element.Edge edge = elem.getEdge(i);
+		  
+		  // We've seen this edge before, link the two elements. 
+		  if (to_resolve.containsKey(edge)) {
+			  int neighbor_index = to_resolve.get(edge);
+			  to_resolve.remove(edge);
+			  
+			  Element neighbor = (Element)graph.get(neighbor_index);
+			  
+			  neighbor.resolveNeighbor(elem);
+			  elem.resolveNeighbor(neighbor);
+		  }
+		  
+		  // Haven't seen the edge before, add a reference to the element so 
+		  // the neighbor can resolve it later. 
+		  else {	
+			  to_resolve.put(edge,  elem.getIndex());
+		  }
+	  }
+  }
 
-  private void readPoly(EdgeGraph<Element, Element.Edge> mesh, String filename, JSONTuple[] JSONTuples) throws Exception {
+  private void readPoly(HashMap<Element.Edge, Integer> unresolved_edges, String filename, JSONTuple[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".poly");
 
     scanner.nextInt();
@@ -111,26 +166,52 @@ public class Mesh {
     int nsegs = scanner.nextInt();
     scanner.nextInt();
     Element[] segments = new Element[nsegs];
+    
     for (int i = 0; i < nsegs; i++) {
       int index = scanner.nextInt();
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       scanner.nextInt();
-      segments[index] = new Element(JSONTuples[n1], JSONTuples[n2]);
-      Node<Element> temp = addElement(mesh, segments[index]);
+      segments[index] = new Element(JSONTuples[n1], JSONTuples[n2], this);
+      
+      // Mark it as bad.. 
       if (segments[index].isBad()) {
-    	  bad_nodes.addFirst(temp);
+    	  bad_nodes.addFirst(segments[index].getIndex());
       }
+      
+      // Try to resolve the edges..
+      tryResolveEdges(segments[index], unresolved_edges);
     }
   }
+  
+  public void removeNode(int node) {
+	  Element to_remove = (Element)graph.get(node);
+	  to_remove.kill();
+  }
 
+  public boolean containsNode(int node) {
+	  Element to_check = (Element)graph.get(node);
+	  return !to_check.isDead();
+  }
+  
+  public Element getNodeData(int node) {
+	  Element ret = (Element)graph.get(node);
+	  if (ret == null) {
+		  System.out.println("blah");
+	  }
+	  return ret;
+  }
 
   // .poly contains the perimeter of the mesh; edges basically, which is why it
   // contains pairs of nodes
-  public void read(EdgeGraph<Element, Element.Edge> mesh, String basename) throws Exception {
+  public void read(String basename) throws Exception {
     JSONTuple[] JSONTuples = readNodes(basename);
-    readElements(mesh, basename, JSONTuples);
-    readPoly(mesh, basename, JSONTuples);
+    HashMap<Element.Edge, Integer> unresolved_edges = readElements(basename, JSONTuples);
+    readPoly(unresolved_edges, basename, JSONTuples);
+    
+    if (unresolved_edges.size() != 0) {
+    	throw new Exception("There still exist unresolved edges!");
+    }
   }
 
 

@@ -35,25 +35,25 @@ import java.util.LinkedList;
 
 
 public class Subgraph {
-  private final LinkedList<Node<Element>> nodes;
+  private final LinkedList<Integer> nodes;
   // the nodes in the graph before updating
-  private final LinkedList<Node<Element>> border; // the internal edges in the
+  private final LinkedList<Integer> border; // the internal edges in the
                                                   // subgraph
-  private final LinkedList<Edge<Element.Edge>> edges;
-  private final LinkedList<Node<Element>> bad_nodes; 
+  private final LinkedList<Cavity.EdgeWrapper> edges;
+  private final LinkedList<Integer> bad_nodes; 
 
 
   // the edges that connect the subgraph to the rest of the graph
 
   public Subgraph() {
-    nodes = new LinkedList<Node<Element>>();
-    border = new LinkedList<Node<Element>>();
-    edges = new LinkedList<Edge<Element.Edge>>();
-    bad_nodes = new LinkedList<Node<Element>>();
+    nodes = new LinkedList<Integer>();
+    border = new LinkedList<Integer>();
+    edges = new LinkedList<Cavity.EdgeWrapper>();
+    bad_nodes = new LinkedList<Integer>();
   }
 
 
-  public boolean existsNode(Node<Element> n) {
+  public boolean existsNode(int n) {
     return nodes.contains(n);
   }
 
@@ -68,36 +68,36 @@ public class Subgraph {
   }
 
 
-  public boolean addNode(Node<Element> n) {
-	  Element value = n.getData();
-	  if (value.isBad()) {
+  public boolean addNode(int n, Mesh mesh) {
+	  Element node_data = mesh.getNodeData(n);
+	  if (node_data.isBad()) {
 		  bad_nodes.add(n);
 	  }
-    return nodes.add(n);
+	  return nodes.add(n);
   }
 
 
-  public boolean addBorder(Node<Element> b) {
+  public boolean addBorder(int b) {
     return border.add(b);
   }
 
 
-  public void addEdge(Edge<Element.Edge> e) {
+  public void addEdge(Cavity.EdgeWrapper e) {
     edges.add(e);
   }
 
 
-  public LinkedList<Node<Element>> getNodes() {
+  public LinkedList<Integer> getNodes() {
     return nodes;
   }
 
 
-  public LinkedList<Node<Element>> getBorder() {
+  public LinkedList<Integer> getBorder() {
     return border;
   }
 
 
-  public LinkedList<Edge<Element.Edge>> getEdges() {
+  public LinkedList<Cavity.EdgeWrapper> getEdges() {
     return edges;
   }
 
@@ -109,7 +109,7 @@ public class Subgraph {
   }
 
 
-  public LinkedList<Node<Element>> newBad(EdgeGraph<Element, Element.Edge> mesh) {
+  public LinkedList<Integer> newBad() {
     return bad_nodes;
   }
 }
