@@ -193,6 +193,8 @@ public class Cavity {
 
   @SuppressWarnings("unchecked")
   public void update() throws Exception {
+	  
+	  LinkedList<Element> new_elems = new LinkedList<Element>();
     if (centerElement.getDim() == 2) { // we built around a segment
       Element ele1 = new Element(center, centerElement.getPoint(0), graph);
       post.addNode(ele1.getIndex(), graph);
@@ -203,7 +205,7 @@ public class Cavity {
     for (EdgeWrapper conn : connections) {
       Element.Edge edge = conn.getEdge();
       Element new_element = new Element(center, edge.getPoint(0), edge.getPoint(1), graph);
-      
+      new_elems.add(new_element);
       int ne_connection;
       if (pre.existsNode(conn.getNode(0))) {
         ne_connection = conn.getNode(1);
@@ -211,6 +213,9 @@ public class Cavity {
         ne_connection = conn.getNode(0);
       }
       Element.Edge new_edge = new_element.getRelatedEdge(graph.getNodeData(ne_connection));
+      Element other = graph.getNodeData(ne_connection);
+      new_element.resolveNeighbor(other);
+      other.resolveNeighbor(new_element);
       // post.addEdge(graph.createEdge(ne_node, ne_connection, new_edge));
       Collection<Integer> postnodes = (Collection<Integer>) post.getNodes().clone();
       for (int node : postnodes) {
@@ -224,6 +229,16 @@ public class Cavity {
         }
       }
       post.addNode(new_element.getIndex(), graph);
+    }
+    
+    for (int node : post.getNodes()) {
+    	Element elem = graph.getNodeData(node);
+    	int num_neighbors = 2*elem.getDim() - 3;
+    	for (int i = 0; i < num_neighbors; ++i) {
+    		if (elem.getNeighbor(i) == -1) {
+    			throw new Exception("Unresolved neighbor!");
+    		}
+    	}
     }
   }
 }
