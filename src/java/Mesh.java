@@ -43,10 +43,18 @@ import org.json.simple.JSONObject;
 
 public class Mesh {
 	
+  private final static int num_indices = 100000;
+  public final static String[] indices = new String[num_indices]; 
   public  final JSONObject graph = new JSONObject();	
   protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
   protected final LinkedList<Integer> bad_nodes = new LinkedList<Integer>();
 
+  static {
+	  for (int i = 0; i < num_indices; ++i) {
+		  indices[i] = Integer.toString(i);
+	  }
+  }
+  
   public Mesh() {
 	  graph.put("current_index",  0);
   }
@@ -57,7 +65,7 @@ public class Mesh {
   }
   
   public void putNode(int index, Element value) {
-	  graph.put(index,  value);
+	  graph.put(indices[index],  value);
   }
   
   public int getNumNodes() {
@@ -142,7 +150,7 @@ public class Mesh {
 			  int neighbor_index = to_resolve.get(edge);
 			  to_resolve.remove(edge);
 			  
-			  Element neighbor = (Element)graph.get(neighbor_index);
+			  Element neighbor = (Element)graph.get(indices[neighbor_index]);
 			  
 			  neighbor.resolveNeighbor(elem);
 			  elem.resolveNeighbor(neighbor);
@@ -185,17 +193,18 @@ public class Mesh {
   }
   
   public void removeNode(int node) {
-	  Element to_remove = (Element)graph.get(node);
+	  Element to_remove = (Element)graph.get(indices[node]);
 	  to_remove.kill();
   }
 
   public boolean containsNode(int node) {
-	  Element to_check = (Element)graph.get(node);
+	  Element to_check = (Element)graph.get(indices[node]);
 	  return !to_check.isDead();
   }
   
   public Element getNodeData(int node) {
-	  Element ret = (Element)graph.get(node);
+	  
+	  Element ret = (Element)graph.get(indices[node]);
 	  if (ret == null) {
 		  System.out.println("blah");
 	  }
