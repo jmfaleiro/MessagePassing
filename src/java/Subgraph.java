@@ -41,7 +41,7 @@ public class Subgraph {
   // the nodes in the graph before updating
   private final LinkedList<Integer> border; // the internal edges in the
                                                   // subgraph
-  private final LinkedList<Mesh.EdgeWrapper> edges;
+  private final LinkedList<EdgeWrapper> edges;
   private final LinkedList<Integer> bad_nodes; 
 
 
@@ -50,7 +50,7 @@ public class Subgraph {
   public Subgraph() {
     nodes = new LinkedList<Integer>();
     border = new LinkedList<Integer>();
-    edges = new LinkedList<Mesh.EdgeWrapper>();
+    edges = new LinkedList<EdgeWrapper>();
     bad_nodes = new LinkedList<Integer>();
   }
 
@@ -84,7 +84,7 @@ public class Subgraph {
   }
 
 
-  public void addEdge(Mesh.EdgeWrapper e) {
+  public void addEdge(EdgeWrapper e) {
     edges.add(e);
   }
 
@@ -99,7 +99,7 @@ public class Subgraph {
   }
 
 
-  public LinkedList<Mesh.EdgeWrapper> getEdges() {
+  public LinkedList<EdgeWrapper> getEdges() {
     return edges;
   }
 

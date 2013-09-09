@@ -18,8 +18,6 @@ public class JSONTuple {
 	public static final int z_index = 2;
 	public static final int hash_index = 3;
 	
-	
-	
 	private final ArrayNode m_tuple;
 	
 	public JSONTuple(double a, double b, double c) {
@@ -194,7 +192,7 @@ public class JSONTuple {
 	    return new_coord;
 	}
 	
-	private static double Angle(JsonNode vertex, JsonNode end1, JsonNode end2) {
+	public static double Angle(JsonNode vertex, JsonNode end1, JsonNode end2) {
 		double x_diff1 = end1.get(0).getDoubleValue() - vertex.get(0).getDoubleValue();
 		double y_diff1 = end1.get(1).getDoubleValue() - vertex.get(1).getDoubleValue();
 		double z_diff1 = end1.get(2).getDoubleValue() - vertex.get(2).getDoubleValue();

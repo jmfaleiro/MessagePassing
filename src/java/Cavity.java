@@ -47,7 +47,7 @@ public class Cavity {
   protected final Subgraph pre; // the cavity itself
   protected final Subgraph post; // what the new elements should look like
   private final Mesh graph;
-  protected final HashSet<Mesh.EdgeWrapper> connections;
+  protected final HashSet<EdgeWrapper> connections;
 
 
   // the edge-relations that connect the boundary to the cavity
@@ -58,7 +58,7 @@ public class Cavity {
     pre = new Subgraph();
     post = new Subgraph();
     graph = mesh;
-    connections = new HashSet<Mesh.EdgeWrapper>();
+    connections = new HashSet<EdgeWrapper>();
   }
 
 
@@ -164,7 +164,7 @@ public class Cavity {
     	int next = Element.getNeighbor(elem,  i);
 	    ObjectNode nextElement = graph.getNodeData(next);
         JsonNode edge = Element.getEdge(elem,  i);
-        Mesh.EdgeWrapper edge_wrapper = new Mesh.EdgeWrapper(edge, curr, next);
+        EdgeWrapper edge_wrapper = new EdgeWrapper(edge, curr, next);
         
         if ((!(dim == 2 && Element.getDim(nextElement) == 2  && next != centerNode)) && isMember(next)) {
           // isMember says next is part of the cavity, and we're not the second
@@ -203,7 +203,7 @@ public class Cavity {
       post.addNode(Element.getIndex(ele2),graph);
     }
     // for (Edge conn : new HashSet<Edge>(connections)) {
-    for (Mesh.EdgeWrapper conn : connections) {
+    for (EdgeWrapper conn : connections) {
       JsonNode edge = conn.getEdge();
       ObjectNode new_element = Element.CreateNewElement(center, Element.Edge.GetPoint(edge, 0), Element.Edge.GetPoint(edge, 1), graph);
       new_elems.add(new_element);

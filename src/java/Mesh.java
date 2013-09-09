@@ -205,7 +205,7 @@ public class Mesh {
 
   public boolean containsNode(int node) {
 	  ObjectNode to_remove = (ObjectNode)graph.get(indices[node]);
-	  return Element.isDead(to_remove);
+	  return !Element.isDead(to_remove);
   }
   
   public ObjectNode getNodeData(int node) {
@@ -216,6 +216,7 @@ public class Mesh {
   // .poly contains the perimeter of the mesh; edges basically, which is why it
   // contains pairs of nodes
   public void read(String basename) throws Exception {
+	  
     JsonNode[] JSONTuples = readNodes(basename);
     HashMap<EdgeWrapper, Integer> unresolved_edges = readElements(basename, JSONTuples);
     readPoly(unresolved_edges, basename, JSONTuples);
@@ -286,49 +287,5 @@ public class Mesh {
   }
   */
   
-  public static class EdgeWrapper {
-	  
-	  private JsonNode m_edge;
-	  private int m_node0;
-	  private int m_node1;
-	  private int m_hashcode;
-	  
-	  public EdgeWrapper(JsonNode edge, int node0, int node1) {
-		  m_edge = edge;
-		  m_hashcode = Element.Edge.HashCode(edge);
-		  m_node0 = node0;
-		  m_node1 = node1;
-	  }
-	  
-	  public JsonNode getEdge() {
-		  return m_edge;
-	  }
-	  
-	  public int getNode(int index) throws Exception {
-		  switch (index) {
-		  case 0:
-			  return m_node0;
-		  case 1:
-			  return m_node1;
-			  default:
-				  throw new Exception("Got an unexpected index!");
-		  }
-	  }
-	  
-	  @Override
-	  public boolean equals(Object o) {
-		  if (o instanceof EdgeWrapper) {
-			  EdgeWrapper other = ((EdgeWrapper) o);
-			  boolean ret = Element.Edge.Equals(m_edge,  other.m_edge);
-			  return ret;
-		  }
-		  return false;
-	  }
-	  
-	  @Override
-	  public int hashCode() {
-		  return m_hashcode;
-	  }
-	  
-  }
+  
 }

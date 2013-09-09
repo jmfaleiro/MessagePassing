@@ -140,12 +140,6 @@ public class Element {
 	  }
   }
   
-  private static int grabIndex(ObjectNode nodes) {
-	  int current_index = nodes.get("current").getIntValue();
-	  nodes.put("current",  current_index+1);
-	  return current_index;
-  }
-  
   private static JsonNode getCenter(JsonNode coord0, 
 		  				 	  		JsonNode coord1, 
 		  				 	  		JsonNode coord2) {
@@ -160,7 +154,6 @@ public class Element {
 		
 		double len1 = JSONTuple.Distance(coord0,  coord1);
 		double len2 = JSONTuple.Distance(coord0,  coord2);
-		
 		
 		double cosine = (x1*x2 + y1*y2 + z1*z2) / (len1 * len2);
 		double sine_sq = 1.0 - cosine * cosine;
@@ -217,8 +210,8 @@ public class Element {
 	  ret.put("coords",  coords);
 	  
 	  ArrayNode edges = Mesh.mapper.createArrayNode();
-	  edges.add(Element.Edge.CreateEdge(a,  b));
-	  edges.add(Element.Edge.CreateEdge(b,  a));
+	  edges.add(Element.Edge.CreateEdge(coords.get(0), coords.get(1)));
+	  edges.add(Element.Edge.CreateEdge(coords.get(1), coords.get(0)));
 	  
 	  ret.put("edges",  edges);
 	  ret.put("bBad", false);
@@ -238,41 +231,21 @@ public class Element {
   
   public static void resolveNeighbor(ObjectNode from, ObjectNode neighbor) throws Exception {
 	  int related_index = isRelated(from, neighbor);
+	  int neighbor_index = neighbor.get("index").getIntValue();
 	  switch (related_index) {
 	  case 0:
-		  from.put("n0",  related_index);
+		  from.put("n0",  neighbor_index);
 		  return;
 	  case 1:
-		  from.put("n1",  related_index);
+		  from.put("n1",  neighbor_index);
 		  return;
 	  case 2:
-		  from.put("n2", related_index);
+		  from.put("n2", neighbor_index);
 		  return;
 		  
 		  // XXX: Not sure if I should silently fail here!
 		  default:
-			  return;
-	  }
-  }
-  
-  public static void resolveNeighbor(JsonNode from, JsonNode neighbor) throws Exception {
-	  int related_index = isRelated(from, neighbor);
-	  if (related_index == -1) {
-		  throw new Exception("Called with unrelated elements!");
-	  }
-	  
-	  switch (related_index) {
-	  case 0:
-		  ((ObjectNode)from).put("n0",  related_index);
-		  return;
-	  case 1:
-		  ((ObjectNode)from).put("n1",  related_index);
-		  return;
-	  case 2:
-		  ((ObjectNode)from).put("n2",  related_index);
-		  return;
-		  default:
-			  throw new Exception("Shouldn't get here!");
+			  throw new Exception("got an invalid neighbot index!");
 	  }
   }
 
@@ -307,8 +280,8 @@ public class Element {
     		ret.add(a);
     	}
     	int tmphashval = 17;
-    	tmphashval = 37 * tmphashval + a.get(JSONTuple.hash_index).getIntValue();
-        tmphashval = 37 * tmphashval + b.get(JSONTuple.hash_index).getIntValue();
+    	tmphashval = 37 * tmphashval + ret.get(0).get(JSONTuple.hash_index).getIntValue();
+        tmphashval = 37 * tmphashval + ret.get(1).get(JSONTuple.hash_index).getIntValue();
         ret.add(tmphashval);
         return ret;
     }
@@ -329,7 +302,7 @@ public class Element {
 
     public static boolean LessThan(JsonNode edge1, JsonNode edge2) {
     	return JSONTuple.LessThan(edge1.get(0), edge2.get(0)) ||
-    		   (JSONTuple.Equals(edge1.get(0),  edge2.get(0)) && JSONTuple.LessThan(edge1.get(1), edge1.get(1)));
+    		   (JSONTuple.Equals(edge1.get(0),  edge2.get(0)) && JSONTuple.LessThan(edge1.get(1), edge2.get(1)));
 
     }
 
@@ -342,14 +315,8 @@ public class Element {
 
 
     public static JsonNode GetPoint(JsonNode edge, int i) {
-      if (i == 0) {
-        return edge.get(0);
-      } else if (i == 1) {
-        return edge.get(1);
-      } else {
-        System.exit(-1);
-        return null;
-      }
+    	return edge.get(i);
+      
     }
   }
 
