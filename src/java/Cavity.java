@@ -34,17 +34,20 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ObjectNode;
+
 
 public class Cavity {
-  protected JSONTuple center;
+  protected JsonNode center;
   protected int centerNode;
-  protected Element centerElement;
+  protected ObjectNode centerElement;
   protected int dim;
   protected final Queue<Integer> frontier;
   protected final Subgraph pre; // the cavity itself
   protected final Subgraph post; // what the new elements should look like
   private final Mesh graph;
-  protected final HashSet<Cavity.EdgeWrapper> connections;
+  protected final HashSet<Mesh.EdgeWrapper> connections;
 
 
   // the edge-relations that connect the boundary to the cavity
@@ -55,7 +58,7 @@ public class Cavity {
     pre = new Subgraph();
     post = new Subgraph();
     graph = mesh;
-    connections = new HashSet<Cavity.EdgeWrapper>();
+    connections = new HashSet<Mesh.EdgeWrapper>();
   }
 
 
@@ -84,15 +87,15 @@ public class Cavity {
     frontier.clear();
     centerNode = node;
     centerElement = graph.getNodeData(centerNode);
-    while (graph.containsNode(centerNode) && centerElement.isObtuse()) {
+    while (graph.containsNode(centerNode) && Element.isObtuse(centerElement)) {
       centerNode = getOpposite(centerNode);
       centerElement = graph.getNodeData(centerNode);
       if (centerNode == -1) {
         System.exit(-1);
       }
     }
-    center = centerElement.center();
-    dim = centerElement.getDim();
+    center = Element.center(centerElement);
+    dim = Element.getDim(centerElement);
     pre.addNode(centerNode, graph);
     frontier.add(centerNode);
   }
@@ -100,16 +103,16 @@ public class Cavity {
 
   // find the edge that is opposite the obtuse angle of the element
   private int getOpposite(int node) throws Exception {
-    Element element = graph.getNodeData(node);
-    return element.getObtuseNeighbor();
+    ObjectNode element = graph.getNodeData(node);
+    return Element.getObtuseNeighbor(element);
   }
 
 
   public boolean isMember(int node) {
-    Element element = graph.getNodeData(node);
-    return element.inCircle(center);
+    ObjectNode element = graph.getNodeData(node);
+    return Element.inCircle(element,  center);
   }
-
+/*
   public class EdgeWrapper {
 	  private final Element.Edge m_edge;
 	  private final int node0;
@@ -150,23 +153,23 @@ public class Cavity {
 		  return m_edge.hashCode();
 	  }
   }
-  
+  */
 
   public void build() throws Exception {
     while (frontier.size() != 0) {
       int curr = frontier.poll();
-      Element elem = graph.getNodeData(curr);
-      int num_neighbors = 2*elem.getDim() - 3;
+      ObjectNode elem = graph.getNodeData(curr);
+      int num_neighbors = 2*Element.getDim(elem) - 3;
       for (int i = 0; i < num_neighbors; ++i) {
-    	int next = elem.getNeighbor(i);
-	    Element nextElement = graph.getNodeData(next);
-        Element.Edge edge = elem.getEdge(i);
-        Cavity.EdgeWrapper edge_wrapper = new Cavity.EdgeWrapper(edge, curr, next);
+    	int next = Element.getNeighbor(elem,  i);
+	    ObjectNode nextElement = graph.getNodeData(next);
+        JsonNode edge = Element.getEdge(elem,  i);
+        Mesh.EdgeWrapper edge_wrapper = new Mesh.EdgeWrapper(edge, curr, next);
         
-        if ((!(dim == 2 && nextElement.getDim() == 2 && next != centerNode)) && isMember(next)) {
+        if ((!(dim == 2 && Element.getDim(nextElement) == 2  && next != centerNode)) && isMember(next)) {
           // isMember says next is part of the cavity, and we're not the second
           // segment encroaching on this cavity
-          if ((nextElement.getDim() == 2) && (dim != 2)) { // is segment, and we
+          if ((Element.getDim(nextElement) == 2) && (dim != 2)) { // is segment, and we
                                                            // are encroaching
             initialize(next);
             build();
@@ -185,8 +188,6 @@ public class Cavity {
           }
         }    	  
       }
-      
-
     }
   }
 
@@ -194,17 +195,17 @@ public class Cavity {
   @SuppressWarnings("unchecked")
   public void update() throws Exception {
 	  
-	  LinkedList<Element> new_elems = new LinkedList<Element>();
-    if (centerElement.getDim() == 2) { // we built around a segment
-      Element ele1 = new Element(center, centerElement.getPoint(0), graph);
-      post.addNode(ele1.getIndex(), graph);
-      Element ele2 = new Element(center, centerElement.getPoint(1), graph);
-      post.addNode(ele2.getIndex(), graph);
+	  LinkedList<ObjectNode> new_elems = new LinkedList<ObjectNode>();
+    if (Element.getDim(centerElement) == 2) { // we built around a segment
+      ObjectNode ele1 = Element.CreateNewElement(center, Element.getPoint(centerElement,  0),  graph); 
+      post.addNode(Element.getIndex(ele1), graph);
+      ObjectNode ele2 = Element.CreateNewElement(center, Element.getPoint(centerElement,  1), graph);
+      post.addNode(Element.getIndex(ele2),graph);
     }
     // for (Edge conn : new HashSet<Edge>(connections)) {
-    for (EdgeWrapper conn : connections) {
-      Element.Edge edge = conn.getEdge();
-      Element new_element = new Element(center, edge.getPoint(0), edge.getPoint(1), graph);
+    for (Mesh.EdgeWrapper conn : connections) {
+      JsonNode edge = conn.getEdge();
+      ObjectNode new_element = Element.CreateNewElement(center, Element.Edge.GetPoint(edge, 0), Element.Edge.GetPoint(edge, 1), graph);
       new_elems.add(new_element);
       int ne_connection;
       if (pre.existsNode(conn.getNode(0))) {
@@ -212,30 +213,30 @@ public class Cavity {
       } else {
         ne_connection = conn.getNode(0);
       }
-      Element.Edge new_edge = new_element.getRelatedEdge(graph.getNodeData(ne_connection));
-      Element other = graph.getNodeData(ne_connection);
-      new_element.resolveNeighbor(other);
-      other.resolveNeighbor(new_element);
+      JsonNode new_edge = Element.getRelatedEdge(new_element,  graph.getNodeData(ne_connection)); 
+      ObjectNode other = graph.getNodeData(ne_connection);
+      Element.resolveNeighbor(new_element, other);
+      Element.resolveNeighbor(other,  new_element);
       // post.addEdge(graph.createEdge(ne_node, ne_connection, new_edge));
       Collection<Integer> postnodes = (Collection<Integer>) post.getNodes().clone();
       for (int node : postnodes) {
-        Element element = graph.getNodeData(node);
-        int related_index = element.isRelated(new_element);
+        ObjectNode element = graph.getNodeData(node);
+        int related_index = Element.isRelated(element,  new_element);
         if (related_index >= 0) {
-          element.setNeighbor(related_index,  new_element.getIndex());
-          related_index = new_element.isRelated(element);
-          new_element.setNeighbor(related_index,  element.getIndex());
+          Element.setNeighbor(element, related_index, Element.getIndex(new_element));
+          related_index = Element.isRelated(new_element,  element);
+          Element.setNeighbor(new_element,  related_index,  Element.getIndex(element));
           // post.addEdge(graph.createEdge(ne_node, node, ele_edge));
         }
       }
-      post.addNode(new_element.getIndex(), graph);
+      post.addNode(Element.getIndex(new_element), graph);
     }
     
     for (int node : post.getNodes()) {
-    	Element elem = graph.getNodeData(node);
-    	int num_neighbors = 2*elem.getDim() - 3;
+    	ObjectNode elem = graph.getNodeData(node);
+    	int num_neighbors = 2*Element.getDim(elem) - 3;
     	for (int i = 0; i < num_neighbors; ++i) {
-    		if (elem.getNeighbor(i) == -1) {
+    		if (Element.getNeighbor(elem,  i) == -1) {
     			throw new Exception("Unresolved neighbor!");
     		}
     	}

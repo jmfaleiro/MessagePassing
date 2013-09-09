@@ -38,14 +38,19 @@ import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Stack;
 
-import org.json.simple.JSONObject;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.*;
 
 
 public class Mesh {
 	
+	
+	
+  public final static ObjectMapper mapper = new ObjectMapper();	
   private final static int num_indices = 100000;
   public final static String[] indices = new String[num_indices]; 
-  public  final JSONObject graph = new JSONObject();	
+  public  final ObjectNode graph = mapper.createObjectNode();
   protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
   protected final LinkedList<Integer> bad_nodes = new LinkedList<Integer>();
 
@@ -64,16 +69,16 @@ public class Mesh {
     return bad_nodes;
   }
   
-  public void putNode(int index, Element value) {
+  public void putNode(int index, JsonNode value) {
 	  graph.put(indices[index],  value);
   }
   
   public int getNumNodes() {
-	  return (Integer)graph.get("current_index");
+	  return graph.get("current_index").getIntValue();
   }
 
   public int getNextIndex() {
-	  int current_index = (Integer)graph.get("current_index");
+	  int current_index = graph.get("current_index").getIntValue();
 	  graph.put("current_index", current_index+1);
 	  return current_index;
   }
@@ -88,7 +93,7 @@ public class Mesh {
   }
 
 
-  private JSONTuple[] readNodes(String filename) throws Exception {
+  private JsonNode[] readNodes(String filename) throws Exception {
     Scanner scanner = getScanner(filename + ".node");
 
     int ntups = scanner.nextInt();
@@ -96,38 +101,38 @@ public class Mesh {
     scanner.nextInt();
     scanner.nextInt();
 
-    JSONTuple[] JSONTuples = new JSONTuple[ntups];
+    JsonNode[] JSONTuples = new JsonNode[ntups];
     for (int i = 0; i < ntups; i++) {
       int index = scanner.nextInt();
       double x = scanner.nextDouble();
       double y = scanner.nextDouble();
       scanner.nextDouble(); // z
-      JSONTuples[index] = new JSONTuple(x, y, 0);
+      JSONTuples[index] = JSONTuple.CreateTuple(x,  y,  0);
     }
 
     return JSONTuples;
   }
 
 
-  private HashMap<Element.Edge, Integer> readElements(String filename, JSONTuple[] JSONTuples) throws Exception {
+  private HashMap<EdgeWrapper, Integer> readElements(String filename, JsonNode[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".ele");
 
-    HashMap<Element.Edge, Integer> unresolved_edges = new HashMap<Element.Edge, Integer>();
+    HashMap<EdgeWrapper, Integer> unresolved_edges = new HashMap<EdgeWrapper, Integer>();
     
     
     int nels = scanner.nextInt();
     scanner.nextInt();
     scanner.nextInt();
-    Element[] elements = new Element[nels];
+    ObjectNode[] elements = new ObjectNode[nels];
     for (int i = 0; i < nels; i++) {
       int index = scanner.nextInt();
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       int n3 = scanner.nextInt();
-      elements[index] = new Element(JSONTuples[n1], JSONTuples[n2], JSONTuples[n3], this);
-      int graph_index = elements[index].getIndex();
+      elements[index] = Element.CreateNewElement(JSONTuples[n1], JSONTuples[n2], JSONTuples[n3], this);
+      int graph_index = Element.getIndex(elements[index]);
       
-      if (elements[index].isBad()) {
+      if (Element.isBad(elements[index])) {
     	  bad_nodes.addFirst(graph_index);
       }
       
@@ -137,34 +142,35 @@ public class Mesh {
     return unresolved_edges;
   }
 
-  private void tryResolveEdges(Element elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
+  private void tryResolveEdges(ObjectNode elem, HashMap<EdgeWrapper, Integer> to_resolve) throws Exception {
 	  
 	  // 1 edge if it's a segment, otherwise 3. 
-	  int n_edges = 2*elem.getDim() - 3;
+	  int n_edges =  2*Element.getDim(elem) - 3;
 	  
 	  for (int i = 0; i < n_edges; ++i) {
-		  Element.Edge edge = elem.getEdge(i);
+		  JsonNode edge = Element.getEdge(elem,  i);
+		  EdgeWrapper wrapper = new EdgeWrapper(edge, -1, -1);
 		  
 		  // We've seen this edge before, link the two elements. 
-		  if (to_resolve.containsKey(edge)) {
-			  int neighbor_index = to_resolve.get(edge);
-			  to_resolve.remove(edge);
+		  if (to_resolve.containsKey(wrapper)) {
+			  int neighbor_index = to_resolve.get(wrapper);
+			  to_resolve.remove(wrapper);
 			  
-			  Element neighbor = (Element)graph.get(indices[neighbor_index]);
+			  ObjectNode neighbor = (ObjectNode)(graph.get(indices[neighbor_index]));
 			  
-			  neighbor.resolveNeighbor(elem);
-			  elem.resolveNeighbor(neighbor);
+			  Element.resolveNeighbor(elem,  neighbor);
+			  Element.resolveNeighbor(neighbor,  elem);
 		  }
 		  
 		  // Haven't seen the edge before, add a reference to the element so 
 		  // the neighbor can resolve it later. 
 		  else {	
-			  to_resolve.put(edge,  elem.getIndex());
+			  to_resolve.put(wrapper,  Element.getIndex(elem));
 		  }
 	  }
   }
 
-  private void readPoly(HashMap<Element.Edge, Integer> unresolved_edges, String filename, JSONTuple[] JSONTuples) throws Exception {
+  private void readPoly(HashMap<EdgeWrapper, Integer> unresolved_edges, String filename, JsonNode[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".poly");
 
     scanner.nextInt();
@@ -173,18 +179,18 @@ public class Mesh {
     scanner.nextInt();
     int nsegs = scanner.nextInt();
     scanner.nextInt();
-    Element[] segments = new Element[nsegs];
+    ObjectNode[] segments = new ObjectNode[nsegs];
     
     for (int i = 0; i < nsegs; i++) {
       int index = scanner.nextInt();
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       scanner.nextInt();
-      segments[index] = new Element(JSONTuples[n1], JSONTuples[n2], this);
+      segments[index] = Element.CreateNewElement(JSONTuples[n1],  JSONTuples[n2],  this);  
       
       // Mark it as bad.. 
-      if (segments[index].isBad()) {
-    	  bad_nodes.addFirst(segments[index].getIndex());
+      if (Element.isBad(segments[index])) {
+    	  bad_nodes.addFirst(Element.getIndex(segments[index]));
       }
       
       // Try to resolve the edges..
@@ -193,29 +199,25 @@ public class Mesh {
   }
   
   public void removeNode(int node) {
-	  Element to_remove = (Element)graph.get(indices[node]);
-	  to_remove.kill();
+	  ObjectNode to_remove = (ObjectNode)graph.get(indices[node]);
+	  Element.kill(to_remove);
   }
 
   public boolean containsNode(int node) {
-	  Element to_check = (Element)graph.get(indices[node]);
-	  return !to_check.isDead();
+	  ObjectNode to_remove = (ObjectNode)graph.get(indices[node]);
+	  return Element.isDead(to_remove);
   }
   
-  public Element getNodeData(int node) {
-	  
-	  Element ret = (Element)graph.get(indices[node]);
-	  if (ret == null) {
-		  System.out.println("blah");
-	  }
+  public ObjectNode getNodeData(int node) {
+	  ObjectNode ret = (ObjectNode)graph.get(indices[node]);
 	  return ret;
   }
 
   // .poly contains the perimeter of the mesh; edges basically, which is why it
   // contains pairs of nodes
   public void read(String basename) throws Exception {
-    JSONTuple[] JSONTuples = readNodes(basename);
-    HashMap<Element.Edge, Integer> unresolved_edges = readElements(basename, JSONTuples);
+    JsonNode[] JSONTuples = readNodes(basename);
+    HashMap<EdgeWrapper, Integer> unresolved_edges = readElements(basename, JSONTuples);
     readPoly(unresolved_edges, basename, JSONTuples);
     
     if (unresolved_edges.size() != 0) {
@@ -223,11 +225,11 @@ public class Mesh {
     }
   }
 
-
+/*
   protected Node<Element> addElement(EdgeGraph<Element, Element.Edge> mesh, Element element) {
     Node<Element> node = mesh.createNode(element);
     mesh.addNode(node);
-    for (int i = 0; i < element.numEdges(); i++) {
+    for (int i = 0; i <  element.numEdges(); i++) {
       Element.Edge edge = element.getEdge(i);
       if (!edge_map.containsKey(edge)) {
         edge_map.put(edge, node);
@@ -240,6 +242,8 @@ public class Mesh {
     return node;
   }
 
+*/
+  /*
 
   public static boolean verify(EdgeGraph<Element, Element.Edge> mesh) {
     // ensure consistency of elements
@@ -279,5 +283,52 @@ public class Mesh {
       return false;
     }
     return true;
+  }
+  */
+  
+  public static class EdgeWrapper {
+	  
+	  private JsonNode m_edge;
+	  private int m_node0;
+	  private int m_node1;
+	  private int m_hashcode;
+	  
+	  public EdgeWrapper(JsonNode edge, int node0, int node1) {
+		  m_edge = edge;
+		  m_hashcode = Element.Edge.HashCode(edge);
+		  m_node0 = node0;
+		  m_node1 = node1;
+	  }
+	  
+	  public JsonNode getEdge() {
+		  return m_edge;
+	  }
+	  
+	  public int getNode(int index) throws Exception {
+		  switch (index) {
+		  case 0:
+			  return m_node0;
+		  case 1:
+			  return m_node1;
+			  default:
+				  throw new Exception("Got an unexpected index!");
+		  }
+	  }
+	  
+	  @Override
+	  public boolean equals(Object o) {
+		  if (o instanceof EdgeWrapper) {
+			  EdgeWrapper other = ((EdgeWrapper) o);
+			  boolean ret = Element.Edge.Equals(m_edge,  other.m_edge);
+			  return ret;
+		  }
+		  return false;
+	  }
+	  
+	  @Override
+	  public int hashCode() {
+		  return m_hashcode;
+	  }
+	  
   }
 }

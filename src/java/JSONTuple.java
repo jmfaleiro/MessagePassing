@@ -6,6 +6,7 @@
 package DelaunayRefinement.src.java;
 
 
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.*;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -17,12 +18,12 @@ public class JSONTuple {
 	public static final int z_index = 2;
 	public static final int hash_index = 3;
 	
-	private static final ObjectMapper mapper  = new ObjectMapper();
+	
 	
 	private final ArrayNode m_tuple;
 	
 	public JSONTuple(double a, double b, double c) {
-		m_tuple = mapper.createArrayNode();
+		m_tuple = Mesh.mapper.createArrayNode();
 		m_tuple.add(a);
 		m_tuple.add(b);
 		m_tuple.add(c);
@@ -39,7 +40,7 @@ public class JSONTuple {
 	}
 	
 	public JSONTuple(JSONTuple other) {
-		m_tuple = mapper.createArrayNode();
+		m_tuple = Mesh.mapper.createArrayNode();
 		
 		double x_other = other.m_tuple.get(x_index).getDoubleValue();
 		double y_other = (Double)other.m_tuple.get(y_index).getDoubleValue();
@@ -149,10 +150,15 @@ public class JSONTuple {
 	    return Angle(this.m_tuple, a.m_tuple, c.m_tuple);
 	}
 	
-	@Override
-	public String toString() {
-		return new String("(" + m_tuple.get(x_index).getDoubleValue() + ", " + m_tuple.get(y_index).getDoubleValue() + ", " + m_tuple.get(z_index).getDoubleValue() + ")");
+	/*
+	public static String ToString(JsonNode tuple) {
+		double x = tuple.get(x_index).getDoubleValue();
+		double y = tuple.get(y_index).getDoubleValue();
+		double z = tuple.get(z_index).getDoubleValue();
+		
+		return new String("(" + x + ", " + y + ", " + z + ")");
 	}
+	*/
 	
 	public static int cmp(JSONTuple a, JSONTuple b) {
 		return a.cmp(b);
@@ -162,13 +168,13 @@ public class JSONTuple {
 		return a.distance(b);
 	}
 	
-	public static double angle(JSONTuple a, JSONTuple b, JSONTuple c) {
-		return b.angle(a, c);
+	public static double angle(JsonNode a, JsonNode b, JsonNode c) {
+		return Angle(b, a, c);
 	}
 	
 	public static ArrayNode CreateTuple(double a, double b, double c){
 		
-		ArrayNode new_coord = mapper.createArrayNode();
+		ArrayNode new_coord = Mesh.mapper.createArrayNode();
 		
 		// Add the coordinates to the JSONObject. 
 		new_coord.add(a);
@@ -188,7 +194,7 @@ public class JSONTuple {
 	    return new_coord;
 	}
 	
-	public static double Angle(ArrayNode vertex, ArrayNode end1, ArrayNode end2) {
+	private static double Angle(JsonNode vertex, JsonNode end1, JsonNode end2) {
 		double x_diff1 = end1.get(0).getDoubleValue() - vertex.get(0).getDoubleValue();
 		double y_diff1 = end1.get(1).getDoubleValue() - vertex.get(1).getDoubleValue();
 		double z_diff1 = end1.get(2).getDoubleValue() - vertex.get(2).getDoubleValue();
@@ -202,11 +208,11 @@ public class JSONTuple {
 		return (180 / Math.PI) * Math.acos(d);
 	}
 	
-	public static double Distance(ArrayNode first, ArrayNode second) {
+	public static double Distance(JsonNode first, JsonNode second) {
 		return Math.sqrt(DistanceSquared(first, second));
 	}
 	
-	public static double DistanceSquared(ArrayNode first, ArrayNode second) {
+	public static double DistanceSquared(JsonNode first, JsonNode second) {
 		double x_diff = first.get(0).getDoubleValue() - second.get(0).getDoubleValue();
 		double y_diff = first.get(1).getDoubleValue() - second.get(1).getDoubleValue();
 		double z_diff = first.get(2).getDoubleValue() - second.get(2).getDoubleValue();
@@ -220,7 +226,7 @@ public class JSONTuple {
 				(first.get(2).getDoubleValue() * second.get(2).getDoubleValue()));
 	}
 	
-	public static boolean GreaterThan(ArrayNode coord1, ArrayNode coord2) {
+	public static boolean GreaterThan(JsonNode coord1, JsonNode coord2) {
 		double x1 = coord1.get(0).getDoubleValue();
 		double y1 = coord1.get(1).getDoubleValue();
 		double z1 = coord1.get(2).getDoubleValue();
@@ -252,7 +258,7 @@ public class JSONTuple {
 		return false;	
 	}
 	
-	public static boolean LessThan(ArrayNode coord1, ArrayNode coord2) {
+	public static boolean LessThan(JsonNode coord1, JsonNode coord2) {
 		double x1 = coord1.get(0).getDoubleValue();
 		double y1 = coord1.get(1).getDoubleValue();
 		double z1 = coord1.get(2).getDoubleValue();
@@ -284,7 +290,7 @@ public class JSONTuple {
 		return false;	
 	}
 
-	private static boolean Equals(ArrayNode coord1, ArrayNode coord2) {
+	public static boolean Equals(JsonNode coord1, JsonNode coord2) {
 		double x1 = coord1.get(0).getDoubleValue();
 		double y1 = coord1.get(1).getDoubleValue();
 		double z1 = coord1.get(2).getDoubleValue();

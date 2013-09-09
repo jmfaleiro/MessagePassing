@@ -33,13 +33,15 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.codehaus.jackson.node.ObjectNode;
+
 
 public class Subgraph {
   private final LinkedList<Integer> nodes;
   // the nodes in the graph before updating
   private final LinkedList<Integer> border; // the internal edges in the
                                                   // subgraph
-  private final LinkedList<Cavity.EdgeWrapper> edges;
+  private final LinkedList<Mesh.EdgeWrapper> edges;
   private final LinkedList<Integer> bad_nodes; 
 
 
@@ -48,7 +50,7 @@ public class Subgraph {
   public Subgraph() {
     nodes = new LinkedList<Integer>();
     border = new LinkedList<Integer>();
-    edges = new LinkedList<Cavity.EdgeWrapper>();
+    edges = new LinkedList<Mesh.EdgeWrapper>();
     bad_nodes = new LinkedList<Integer>();
   }
 
@@ -69,8 +71,8 @@ public class Subgraph {
 
 
   public boolean addNode(int n, Mesh mesh) {
-	  Element node_data = mesh.getNodeData(n);
-	  if (node_data.isBad()) {
+	  ObjectNode node_data = mesh.getNodeData(n);
+	  if (Element.isBad(node_data)) {
 		  bad_nodes.add(n);
 	  }
 	  return nodes.add(n);
@@ -82,7 +84,7 @@ public class Subgraph {
   }
 
 
-  public void addEdge(Cavity.EdgeWrapper e) {
+  public void addEdge(Mesh.EdgeWrapper e) {
     edges.add(e);
   }
 
@@ -97,7 +99,7 @@ public class Subgraph {
   }
 
 
-  public LinkedList<Cavity.EdgeWrapper> getEdges() {
+  public LinkedList<Mesh.EdgeWrapper> getEdges() {
     return edges;
   }
 
