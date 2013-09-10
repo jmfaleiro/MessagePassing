@@ -32,11 +32,11 @@ public class Element {
   private final boolean bBad;
 
   private final int obtuse;
-  private final JSONTuple[] coords;
+  private final JsonNode[] coords;
   private final Element.Edge[] edges;
   private final int dim;
 
-  private final JSONTuple center;
+  private final JsonNode center;
   private final double radius_squared;
   
   private final int index;
@@ -54,27 +54,30 @@ public class Element {
 	  dead = true;
   }
 
-  public Element(JSONTuple a, JSONTuple b, JSONTuple c, Mesh nodes) {
+  public Element(JsonNode a, JsonNode b, JsonNode c, Mesh nodes) {
 	 
 	 index = nodes.getNextIndex();
 	 dead = false;
 	  
     dim = 3;
-    coords = new JSONTuple[3];
+    coords = new JsonNode[3];
     coords[0] = a;
     coords[1] = b;
     coords[2] = c;
-    if (b.lessThan(a) || c.lessThan(a)) {
-      if (b.lessThan(c)) {
-        coords[0] = b;
-        coords[1] = c;
-        coords[2] = a;
-      } else {
-        coords[0] = c;
-        coords[1] = a;
-        coords[2] = b;
-      }
+    if (JSONTuple.LessThan(b,  a) || JSONTuple.LessThan(c, a)) {
+    	if (JSONTuple.LessThan(b, c)) {
+    		coords[0] = b;
+    		coords[1] = c;
+    		coords[2] = a;
+    	}
+    	else {
+    		coords[0] = c;
+    		coords[1] = a;
+    		coords[2] = b;
+    	}
+    	
     }
+    
     edges = new Element.Edge[3];
     edges[0] = new Element.Edge(coords[0], coords[1]);
     edges[1] = new Element.Edge(coords[1], coords[2]);
@@ -96,7 +99,7 @@ public class Element {
     obtuse = l_obtuse;
     
     center = getCenter(coords[0], coords[1], coords[2]);
-    radius_squared = coords[0].distance_squared(center);
+    radius_squared = JSONTuple.DistanceSquared(coords[0],  center);
     
     neighbors = new int[3];
     for (int i = 0; i < 3; ++i) {
@@ -129,20 +132,20 @@ public class Element {
 	  return current_index;
   }
   
-  private JSONTuple getCenter(JSONTuple coord0, 
-		  				 	  JSONTuple coord1, 
-		  				 	  JSONTuple coord2) {
+  private JsonNode getCenter(JsonNode coord0, 
+		  				 	 JsonNode coord1, 
+		  				 	 JsonNode coord2) {
 	  
-	  double x1 = (Double)coord1.get(JSONTuple.x_index) - (Double)coord0.get(JSONTuple.x_index);
-		double y1 = (Double)coord1.get(JSONTuple.y_index) - (Double)coord0.get(JSONTuple.y_index);
-		double z1 = (Double)coord1.get(JSONTuple.z_index) - (Double)coord0.get(JSONTuple.z_index);
+	  double x1 = coord1.get(JSONTuple.x_index).getDoubleValue() - coord0.get(JSONTuple.x_index).getDoubleValue();
+		double y1 = coord1.get(JSONTuple.y_index).getDoubleValue() - coord0.get(JSONTuple.y_index).getDoubleValue();
+		double z1 = coord1.get(JSONTuple.z_index).getDoubleValue() - coord0.get(JSONTuple.z_index).getDoubleValue();
 		
-		double x2 = (Double)coord2.get(JSONTuple.x_index) - (Double)coord0.get(JSONTuple.x_index);
-		double y2 = (Double)coord2.get(JSONTuple.y_index) - (Double)coord0.get(JSONTuple.y_index);
-		double z2 = (Double)coord2.get(JSONTuple.z_index) - (Double)coord0.get(JSONTuple.z_index);
+		double x2 = coord2.get(JSONTuple.x_index).getDoubleValue() - coord0.get(JSONTuple.x_index).getDoubleValue();
+		double y2 = coord2.get(JSONTuple.y_index).getDoubleValue() - coord0.get(JSONTuple.y_index).getDoubleValue();
+		double z2 = coord2.get(JSONTuple.z_index).getDoubleValue() - coord0.get(JSONTuple.z_index).getDoubleValue();
 		
-		double len1 = coord0.distance(coord1);
-		double len2 = coord0.distance(coord2);
+		double len1 = JSONTuple.Distance(coord0, coord1);
+		double len2 = JSONTuple.Distance(coord0, coord2);
 		
 		double cosine = (x1*x2 + y1*y2 + z1*z2) / (len1 * len2);
 		double sine_sq = 1.0 - cosine * cosine;
@@ -152,40 +155,40 @@ public class Element {
 	    double wp = (plen - cosine) / (2 * t);
 	    double wb = 0.5 - (wp * s);
 	    
-	    double x_center = (Double)coord0.get(JSONTuple.x_index) * (1 - wb - wp);
-	    double y_center = (Double)coord0.get(JSONTuple.y_index) * (1 - wb - wp);
-	    double z_center = (Double)coord0.get(JSONTuple.z_index) * (1 - wb - wp);
+	    double x_center = coord0.get(JSONTuple.x_index).getDoubleValue() * (1 - wb - wp);
+	    double y_center = coord0.get(JSONTuple.y_index).getDoubleValue() * (1 - wb - wp);
+	    double z_center = coord0.get(JSONTuple.z_index).getDoubleValue() * (1 - wb - wp);
 	    
-	    x_center += (Double)coord1.get(JSONTuple.x_index) * wb;
-	    y_center += (Double)coord1.get(JSONTuple.y_index) * wb;
-	    z_center += (Double)coord1.get(JSONTuple.z_index) * wb;
+	    x_center += coord1.get(JSONTuple.x_index).getDoubleValue() * wb;
+	    y_center += coord1.get(JSONTuple.y_index).getDoubleValue() * wb;
+	    z_center += coord1.get(JSONTuple.z_index).getDoubleValue() * wb;
 	    
-	    x_center += (Double)coord2.get(JSONTuple.x_index) * wp;
-	    y_center += (Double)coord2.get(JSONTuple.y_index) * wp;
-	    z_center += (Double)coord2.get(JSONTuple.z_index) * wp;
+	    x_center += coord2.get(JSONTuple.x_index).getDoubleValue() * wp;
+	    y_center += coord2.get(JSONTuple.y_index).getDoubleValue() * wp;
+	    z_center += coord2.get(JSONTuple.z_index).getDoubleValue() * wp;
 	    
-	    return new JSONTuple(x_center, y_center, z_center);
+	    return JSONTuple.CreateTuple(x_center,  y_center,  z_center);
   }
   
-  private JSONTuple getCenter(JSONTuple coord0, JSONTuple coord1) {
-	  double x = (coord0.get(JSONTuple.x_index) + coord1.get(JSONTuple.x_index)) / 2.0;
-	  double y = (coord0.get(JSONTuple.y_index) + coord1.get(JSONTuple.y_index)) / 2.0;
-	  double z = (coord0.get(JSONTuple.z_index) + coord1.get(JSONTuple.z_index)) / 2.0; 
+  private JsonNode getCenter(JsonNode coord0, JsonNode coord1) {
+	  double x = (coord0.get(JSONTuple.x_index).getDoubleValue() + coord1.get(JSONTuple.x_index).getDoubleValue()) / 2.0;
+	  double y = (coord0.get(JSONTuple.y_index).getDoubleValue() + coord1.get(JSONTuple.y_index).getDoubleValue()) / 2.0;
+	  double z = (coord0.get(JSONTuple.z_index).getDoubleValue() + coord1.get(JSONTuple.z_index).getDoubleValue()) / 2.0; 
 	  
-	  return new JSONTuple(x, y, z);
+	  return JSONTuple.CreateTuple(x, y, z);
   }
 
-  public Element(JSONTuple a, JSONTuple b, Mesh nodes) {
+  public Element(JsonNode a, JsonNode b, Mesh nodes) {
 	  index = nodes.getNextIndex();
 	  dead = false;
 	  
     dim = 2;
-    coords = new JSONTuple[2];
+    coords = new JsonNode[2];
     coords[0] = a;
     coords[1] = b;
-    if (b.lessThan(a)) {
-      coords[0] = b;
-      coords[1] = a;
+    if (JSONTuple.LessThan(b, a)) {
+    	coords[0] = b;
+    	coords[1] = a;
     }
     edges = new Element.Edge[2];
     edges[0] = new Element.Edge(coords[0], coords[1]);
@@ -194,7 +197,7 @@ public class Element {
     bObtuse = false;
     obtuse = -1;
     center = getCenter(coords[0], coords[1]);
-    radius_squared = center.distance_squared(a);
+    radius_squared = JSONTuple.DistanceSquared(a,  center);
     
     neighbors = new int[1];
     neighbors[0] = -1;
@@ -216,15 +219,14 @@ public class Element {
   }
   
   public static class Edge {
-    private final JSONTuple p1;
-    private final JSONTuple p2;
+    private final JsonNode p1;
+    private final JsonNode p2;
     private final int hashvalue;
 
 
-    public Edge(JSONTuple a, JSONTuple b) {
-    	JsonNode temp1 = a.m_tuple;
-    	JsonNode temp2 = b.m_tuple;
-      if (JSONTuple.LessThan(temp1,  temp2)) {
+    public Edge(JsonNode a, JsonNode b) {
+    	
+      if (JSONTuple.LessThan(a,  b)) {
         p1 = a;
         p2 = b;
       } else {
@@ -232,8 +234,8 @@ public class Element {
         p2 = a;
       }
       int tmphashval = 17;
-      tmphashval = 37 * tmphashval + p1.m_tuple.get(JSONTuple.hash_index).getIntValue();
-      tmphashval = 37 * tmphashval + p2.m_tuple.get(JSONTuple.hash_index).getIntValue();
+      tmphashval = 37 * tmphashval + p1.get(JSONTuple.hash_index).getIntValue();
+      tmphashval = 37 * tmphashval + p2.get(JSONTuple.hash_index).getIntValue();
       hashvalue = tmphashval;
     }
 
@@ -243,7 +245,7 @@ public class Element {
         return false;
       }
       Edge edge = (Edge) obj;
-      return JSONTuple.Equals(p1.m_tuple, edge.p1.m_tuple) && JSONTuple.Equals(p2.m_tuple, edge.p2.m_tuple); 
+      return JSONTuple.Equals(p1, edge.p1) && JSONTuple.Equals(p2, edge.p2); 
     }
 
 
@@ -259,30 +261,18 @@ public class Element {
 
 
     public boolean lessThan(Edge rhs) {
-    	JsonNode j1 = p1.m_tuple;
-    	JsonNode j2 = p2.m_tuple;
-    	
-    	JsonNode e1 = rhs.p1.m_tuple;
-    	JsonNode e2 = rhs.p2.m_tuple;
-    	
-    	return JSONTuple.LessThan(j1,  e1) || (JSONTuple.Equals(j1,  e1) && JSONTuple.LessThan(j2,  e2));
+    	return JSONTuple.LessThan(p1,  rhs.p1) || (JSONTuple.Equals(p1,  rhs.p1) && JSONTuple.LessThan(p2,  rhs.p2));
     	
     }
 
 
     public boolean greaterThan(Edge rhs) {
-    	JsonNode j1 = p1.m_tuple;
-    	JsonNode j2 = p2.m_tuple;
-    	
-    	JsonNode e1 = rhs.p1.m_tuple;
-    	JsonNode e2 = rhs.p2.m_tuple;
-    	return JSONTuple.GreaterThan(j1,  e1) || (JSONTuple.Equals(j1,  e1) && JSONTuple.GreaterThan(j2,  e2));
+    	return JSONTuple.GreaterThan(p1,  rhs.p1) || (JSONTuple.Equals(p1,  rhs.p1) && JSONTuple.GreaterThan(p2,  rhs.p2));
 
-      
     }
 
 
-    public JSONTuple getPoint(int i) {
+    public JsonNode getPoint(int i) {
       if (i == 0) {
         return p1;
       } else if (i == 1) {
@@ -310,9 +300,9 @@ public class Element {
       return true;
     }
     for (int i = 0; i < dim; i++) {
-      if (coords[i].lessThan(e.coords[i])) {
+    	if (JSONTuple.LessThan(coords[i],  e.coords[i])) {
         return true;
-      } else if (coords[i].greaterThan(e.coords[i])) {
+      } else if (JSONTuple.GreaterThan(coords[i],  e.coords[i])) {
         return false;
       }
     }
@@ -381,13 +371,13 @@ public class Element {
   }
 
 
-  public JSONTuple center() {
+  public JsonNode center() {
     return center;
   }
 
 
-  public boolean inCircle(JSONTuple p) {
-    double ds = center.distance_squared(p);
+  public boolean inCircle(JsonNode p) {
+	  double ds = JSONTuple.DistanceSquared(center,  p);
     return ds <= radius_squared;
   }
 
@@ -401,9 +391,9 @@ public class Element {
     if (k == dim) {
       k = 0;
     }
-    JSONTuple a = coords[i];
-    JSONTuple b = coords[j];
-    JSONTuple c = coords[k];
+    JsonNode a = coords[i];
+    JsonNode b = coords[j];
+    JsonNode c = coords[k];
     return JSONTuple.angle(b, a, c);
   }
 
@@ -416,7 +406,7 @@ public class Element {
   }
 
 
-  public JSONTuple getPoint(int i) {
+  public JsonNode getPoint(int i) {
     return coords[i];
   }
 

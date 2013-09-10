@@ -38,6 +38,7 @@ import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Stack;
 
+import org.codehaus.jackson.JsonNode;
 import org.json.simple.JSONObject;
 
 
@@ -88,7 +89,7 @@ public class Mesh {
   }
 
 
-  private JSONTuple[] readNodes(String filename) throws Exception {
+  private JsonNode[] readNodes(String filename) throws Exception {
     Scanner scanner = getScanner(filename + ".node");
 
     int ntups = scanner.nextInt();
@@ -96,20 +97,21 @@ public class Mesh {
     scanner.nextInt();
     scanner.nextInt();
 
-    JSONTuple[] JSONTuples = new JSONTuple[ntups];
+    JsonNode[] JSONTuples = new JsonNode[ntups];
     for (int i = 0; i < ntups; i++) {
       int index = scanner.nextInt();
       double x = scanner.nextDouble();
       double y = scanner.nextDouble();
       scanner.nextDouble(); // z
-      JSONTuples[index] = new JSONTuple(x, y, 0);
+      JSONTuples[index] = JSONTuple.CreateTuple(x,  y,  0);
+      // JSONTuples[index] = new JSONTuple(x, y, 0);
     }
 
     return JSONTuples;
   }
 
 
-  private HashMap<Element.Edge, Integer> readElements(String filename, JSONTuple[] JSONTuples) throws Exception {
+  private HashMap<Element.Edge, Integer> readElements(String filename, JsonNode[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".ele");
 
     HashMap<Element.Edge, Integer> unresolved_edges = new HashMap<Element.Edge, Integer>();
@@ -164,7 +166,7 @@ public class Mesh {
 	  }
   }
 
-  private void readPoly(HashMap<Element.Edge, Integer> unresolved_edges, String filename, JSONTuple[] JSONTuples) throws Exception {
+  private void readPoly(HashMap<Element.Edge, Integer> unresolved_edges, String filename, JsonNode[] JSONTuples) throws Exception {
     Scanner scanner = getScanner(filename + ".poly");
 
     scanner.nextInt();
@@ -180,6 +182,7 @@ public class Mesh {
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       scanner.nextInt();
+      
       segments[index] = new Element(JSONTuples[n1], JSONTuples[n2], this);
       
       // Mark it as bad.. 
@@ -214,7 +217,7 @@ public class Mesh {
   // .poly contains the perimeter of the mesh; edges basically, which is why it
   // contains pairs of nodes
   public void read(String basename) throws Exception {
-    JSONTuple[] JSONTuples = readNodes(basename);
+    JsonNode[] JSONTuples = readNodes(basename);
     HashMap<Element.Edge, Integer> unresolved_edges = readElements(basename, JSONTuples);
     readPoly(unresolved_edges, basename, JSONTuples);
     

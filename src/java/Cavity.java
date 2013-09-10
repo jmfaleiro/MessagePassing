@@ -35,9 +35,11 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.codehaus.jackson.JsonNode;
+
 
 public class Cavity {
-  protected JSONTuple center;
+  protected JsonNode center;
   protected int centerNode;
   protected Element centerElement;
   protected int dim;

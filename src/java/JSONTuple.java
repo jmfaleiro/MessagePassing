@@ -22,7 +22,7 @@ public class JSONTuple {
 	
 	public final JsonNode m_tuple;
 	
-	public JsonNode CreateTuple(double a, double b, double c) {
+	public static JsonNode CreateTuple(double a, double b, double c) {
 		ArrayNode ret = mapper.createArrayNode();
 		ret.add(a);
 		ret.add(b);
@@ -137,8 +137,9 @@ public class JSONTuple {
 		return a.distance(b);
 	}
 	
-	public static double angle(JSONTuple a, JSONTuple b, JSONTuple c) {
-		return b.angle(a, c);
+	public static double angle(JsonNode a, JsonNode b, JsonNode c) {
+		return Angle(b, a, c);
+		// return b.angle(a, c);
 	}
 	
 	public static double Angle(JsonNode vertex, JsonNode end1, JsonNode end2) {
