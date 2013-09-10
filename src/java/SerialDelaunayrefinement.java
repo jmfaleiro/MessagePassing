@@ -123,7 +123,7 @@ public class SerialDelaunayrefinement {
         }
         
         ++iter;
-        // System.out.println(iter);
+        System.out.println(iter);
         
       }
     }

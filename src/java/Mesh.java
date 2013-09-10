@@ -39,14 +39,17 @@ import java.util.Scanner;
 import java.util.Stack;
 
 import org.codehaus.jackson.JsonNode;
-import org.json.simple.JSONObject;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 
 
 public class Mesh {
 	
+  public final static ObjectMapper mapper = new ObjectMapper();
   private final static int num_indices = 100000;
   public final static String[] indices = new String[num_indices]; 
-  public  final JSONObject graph = new JSONObject();	
+  private int current_index = 0;
+  public  final HashMap<String, Element> graph = new HashMap<String, Element>();	
   protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
   protected final LinkedList<Integer> bad_nodes = new LinkedList<Integer>();
 
@@ -57,7 +60,7 @@ public class Mesh {
   }
   
   public Mesh() {
-	  graph.put("current_index",  0);
+	  current_index = 0;
   }
   
   @SuppressWarnings("unchecked")
@@ -70,13 +73,13 @@ public class Mesh {
   }
   
   public int getNumNodes() {
-	  return (Integer)graph.get("current_index");
+	  return current_index;
   }
 
   public int getNextIndex() {
-	  int current_index = (Integer)graph.get("current_index");
-	  graph.put("current_index", current_index+1);
-	  return current_index;
+	  int ret = current_index;
+	  current_index += 1;
+	  return ret;
   }
   
   
@@ -145,14 +148,14 @@ public class Mesh {
 	  int n_edges = 2*elem.getDim() - 3;
 	  
 	  for (int i = 0; i < n_edges; ++i) {
-		  Element.Edge edge = elem.getEdge(i);
+		  Element.Edge edge = new Element.Edge(elem.getEdge(i));
 		  
 		  // We've seen this edge before, link the two elements. 
 		  if (to_resolve.containsKey(edge)) {
 			  int neighbor_index = to_resolve.get(edge);
 			  to_resolve.remove(edge);
 			  
-			  Element neighbor = (Element)graph.get(indices[neighbor_index]);
+			  Element neighbor = graph.get(indices[neighbor_index]);
 			  
 			  neighbor.resolveNeighbor(elem);
 			  elem.resolveNeighbor(neighbor);
@@ -226,7 +229,7 @@ public class Mesh {
     }
   }
 
-
+/*
   protected Node<Element> addElement(EdgeGraph<Element, Element.Edge> mesh, Element element) {
     Node<Element> node = mesh.createNode(element);
     mesh.addNode(node);
@@ -242,6 +245,7 @@ public class Mesh {
     }
     return node;
   }
+  */
 
 
   public static boolean verify(EdgeGraph<Element, Element.Edge> mesh) {

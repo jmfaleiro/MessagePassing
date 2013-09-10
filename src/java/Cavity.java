@@ -167,7 +167,7 @@ public class Cavity {
       for (int i = 0; i < num_neighbors; ++i) {
     	int next = elem.getNeighbor(i);
 	    Element nextElement = graph.getNodeData(next);
-        Element.Edge edge = elem.getEdge(i);
+        Element.Edge edge = new Element.Edge(elem.getEdge(i));
         // Cavity.EdgeWrapper edge_wrapper = new Cavity.EdgeWrapper(edge, curr, next);
         
         if ((!(dim == 2 && nextElement.getDim() == 2 && next != centerNode)) && isMember(next)) {
@@ -199,7 +199,7 @@ public class Cavity {
   public void resolveEdges(Element elem) throws Exception {
 	  int num = elem.numEdges();
 	  for (int i = 0; i < num; ++i) {
-		  Element.Edge edge = elem.getEdge(i);
+		  Element.Edge edge = new Element.Edge(elem.getEdge(i));
 		  if (unresolved_edges.containsKey(edge)) {
 			  int neighbor_index = unresolved_edges.get(edge);
 			  unresolved_edges.remove(edge);
@@ -224,8 +224,8 @@ public class Cavity {
       post.addNode(ele1.getIndex(), graph);
       Element ele2 = new Element(center, centerElement.getPoint(1), graph);
       post.addNode(ele2.getIndex(), graph);
-      unresolved_edges.put(ele1.getEdge(0),  ele1.getIndex());
-      unresolved_edges.put(ele2.getEdge(0),  ele2.getIndex());
+      unresolved_edges.put(new Element.Edge(ele1.getEdge(0)),  ele1.getIndex());
+      unresolved_edges.put(new Element.Edge(ele2.getEdge(0)),  ele2.getIndex());
     }
     // for (Edge conn : new HashSet<Edge>(connections)) {
     for (Element.Edge edge : connections.keySet()) {
