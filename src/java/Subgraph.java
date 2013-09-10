@@ -37,9 +37,7 @@ import java.util.LinkedList;
 public class Subgraph {
   private final LinkedList<Integer> nodes;
   // the nodes in the graph before updating
-  private final LinkedList<Integer> border; // the internal edges in the
-                                                  // subgraph
-  private final LinkedList<Cavity.EdgeWrapper> edges;
+  
   private final LinkedList<Integer> bad_nodes; 
 
 
@@ -47,27 +45,13 @@ public class Subgraph {
 
   public Subgraph() {
     nodes = new LinkedList<Integer>();
-    border = new LinkedList<Integer>();
-    edges = new LinkedList<Cavity.EdgeWrapper>();
     bad_nodes = new LinkedList<Integer>();
   }
-
 
   public boolean existsNode(int n) {
     return nodes.contains(n);
   }
-
-
-  public boolean existsBorder(Node<Element> b) {
-    return border.contains(b);
-  }
-
-
-  public boolean existsEdge(Edge<Element.Edge> e) {
-    return edges.contains(e);
-  }
-
-
+  
   public boolean addNode(int n, Mesh mesh) {
 	  Element node_data = mesh.getNodeData(n);
 	  if (node_data.isBad()) {
@@ -76,36 +60,12 @@ public class Subgraph {
 	  return nodes.add(n);
   }
 
-
-  public boolean addBorder(int b) {
-    return border.add(b);
-  }
-
-
-  public void addEdge(Cavity.EdgeWrapper e) {
-    edges.add(e);
-  }
-
-
   public LinkedList<Integer> getNodes() {
     return nodes;
   }
-
-
-  public LinkedList<Integer> getBorder() {
-    return border;
-  }
-
-
-  public LinkedList<Cavity.EdgeWrapper> getEdges() {
-    return edges;
-  }
-
-
   public void reset() {
     nodes.clear();
-    border.clear();
-    edges.clear();
+    bad_nodes.clear();
   }
 
 

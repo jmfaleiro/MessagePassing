@@ -137,7 +137,7 @@ public class Mesh {
     return unresolved_edges;
   }
 
-  private void tryResolveEdges(Element elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
+  public void tryResolveEdges(Element elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
 	  
 	  // 1 edge if it's a segment, otherwise 3. 
 	  int n_edges = 2*elem.getDim() - 3;

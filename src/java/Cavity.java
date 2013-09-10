@@ -30,6 +30,7 @@ import objects.graph.EdgeGraph;
 import objects.graph.Node;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -44,7 +45,9 @@ public class Cavity {
   protected final Subgraph pre; // the cavity itself
   protected final Subgraph post; // what the new elements should look like
   private final Mesh graph;
-  protected final HashSet<Cavity.EdgeWrapper> connections;
+  protected final HashMap<Element.Edge, Integer> connections;
+  
+  protected final HashMap<Element.Edge, Integer> unresolved_edges;
 
 
   // the edge-relations that connect the boundary to the cavity
@@ -55,7 +58,8 @@ public class Cavity {
     pre = new Subgraph();
     post = new Subgraph();
     graph = mesh;
-    connections = new HashSet<Cavity.EdgeWrapper>();
+    connections = new HashMap<Element.Edge, Integer>();
+    unresolved_edges = new HashMap<Element.Edge, Integer>();
   }
 
 
@@ -82,6 +86,7 @@ public class Cavity {
     post.reset();
     connections.clear();
     frontier.clear();
+    
     centerNode = node;
     centerElement = graph.getNodeData(centerNode);
     while (graph.containsNode(centerNode) && centerElement.isObtuse()) {
@@ -161,7 +166,7 @@ public class Cavity {
     	int next = elem.getNeighbor(i);
 	    Element nextElement = graph.getNodeData(next);
         Element.Edge edge = elem.getEdge(i);
-        Cavity.EdgeWrapper edge_wrapper = new Cavity.EdgeWrapper(edge, curr, next);
+        // Cavity.EdgeWrapper edge_wrapper = new Cavity.EdgeWrapper(edge, curr, next);
         
         if ((!(dim == 2 && nextElement.getDim() == 2 && next != centerNode)) && isMember(next)) {
           // isMember says next is part of the cavity, and we're not the second
@@ -174,15 +179,13 @@ public class Cavity {
           } else {
             if (!pre.existsNode(next)) {
               pre.addNode(next, graph);
-              pre.addEdge(edge_wrapper);
               frontier.add(next);
             }
           }
         } else { // not a member
-          if (!connections.contains(edge_wrapper)) {
-            connections.add(edge_wrapper);
-            pre.addBorder(next);
-          }
+        	if (!connections.containsKey(edge)) {
+        		connections.put(edge,  next);
+        	}
         }    	  
       }
       
@@ -191,8 +194,27 @@ public class Cavity {
   }
 
 
+  public void resolveEdges(Element elem) throws Exception {
+	  int num = elem.numEdges();
+	  for (int i = 0; i < num; ++i) {
+		  Element.Edge edge = elem.getEdge(i);
+		  if (unresolved_edges.containsKey(edge)) {
+			  int neighbor_index = unresolved_edges.get(edge);
+			  unresolved_edges.remove(edge);
+			  
+			  Element neighbor = graph.getNodeData(neighbor_index);
+			  neighbor.resolveNeighbor(elem);
+			  elem.resolveNeighbor(neighbor);
+		  }
+		  else {
+			  unresolved_edges.put(edge,  elem.getIndex());
+		  }
+	  }
+  }
+  
   @SuppressWarnings("unchecked")
   public void update() throws Exception {
+	  
 	  
 	  LinkedList<Element> new_elems = new LinkedList<Element>();
     if (centerElement.getDim() == 2) { // we built around a segment
@@ -200,22 +222,43 @@ public class Cavity {
       post.addNode(ele1.getIndex(), graph);
       Element ele2 = new Element(center, centerElement.getPoint(1), graph);
       post.addNode(ele2.getIndex(), graph);
+      unresolved_edges.put(ele1.getEdge(0),  ele1.getIndex());
+      unresolved_edges.put(ele2.getEdge(0),  ele2.getIndex());
     }
     // for (Edge conn : new HashSet<Edge>(connections)) {
-    for (EdgeWrapper conn : connections) {
-      Element.Edge edge = conn.getEdge();
+    for (Element.Edge edge : connections.keySet()) {
+      
       Element new_element = new Element(center, edge.getPoint(0), edge.getPoint(1), graph);
       new_elems.add(new_element);
+      unresolved_edges.put(edge, connections.get(edge));
+      resolveEdges(new_element);
+      
+      /*
+      unresolved_edges.put(edge, connections.get(edge));
+      
+      graph.tryResolveEdges(new_element,  unresolved_edges);
+      */
+      
+      /*
       int ne_connection;
       if (pre.existsNode(conn.getNode(0))) {
         ne_connection = conn.getNode(1);
       } else {
         ne_connection = conn.getNode(0);
       }
+      
+      
+      
+      
+      int ne_connection = connections.get(edge);
+      
       Element.Edge new_edge = new_element.getRelatedEdge(graph.getNodeData(ne_connection));
       Element other = graph.getNodeData(ne_connection);
       new_element.resolveNeighbor(other);
       other.resolveNeighbor(new_element);
+      
+      
+      
       // post.addEdge(graph.createEdge(ne_node, ne_connection, new_edge));
       Collection<Integer> postnodes = (Collection<Integer>) post.getNodes().clone();
       for (int node : postnodes) {
@@ -228,6 +271,7 @@ public class Cavity {
           // post.addEdge(graph.createEdge(ne_node, node, ele_edge));
         }
       }
+      */
       post.addNode(new_element.getIndex(), graph);
     }
     
