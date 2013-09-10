@@ -20,7 +20,7 @@ public class JSONTuple {
 	
 	private static final ObjectMapper mapper  = new ObjectMapper();
 	
-	private final JsonNode m_tuple;
+	public final JsonNode m_tuple;
 	
 	public JsonNode CreateTuple(double a, double b, double c) {
 		ArrayNode ret = mapper.createArrayNode();
@@ -237,7 +237,7 @@ public class JSONTuple {
 		return false;	
 	}
 
-	private static boolean Equals(JsonNode coord1, JsonNode coord2) {
+	public static boolean Equals(JsonNode coord1, JsonNode coord2) {
 		double x1 = coord1.get(0).getDoubleValue();
 		double y1 = coord1.get(1).getDoubleValue();
 		double z1 = coord1.get(2).getDoubleValue();

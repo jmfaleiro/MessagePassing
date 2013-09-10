@@ -24,6 +24,7 @@ File: Element.java
 
 package DelaunayRefinement.src.java;
 
+import org.codehaus.jackson.JsonNode;
 import org.json.simple.JSONObject;
 
 public class Element {
@@ -220,15 +221,10 @@ public class Element {
     private final int hashvalue;
 
 
-    public Edge() {
-      p1 = null;
-      p2 = null;
-      hashvalue = 1;
-    }
-
-
     public Edge(JSONTuple a, JSONTuple b) {
-      if (a.lessThan(b)) {
+    	JsonNode temp1 = a.m_tuple;
+    	JsonNode temp2 = b.m_tuple;
+      if (JSONTuple.LessThan(temp1,  temp2)) {
         p1 = a;
         p2 = b;
       } else {
@@ -236,18 +232,10 @@ public class Element {
         p2 = a;
       }
       int tmphashval = 17;
-      tmphashval = 37 * tmphashval + p1.hashCode();
-      tmphashval = 37 * tmphashval + p2.hashCode();
+      tmphashval = 37 * tmphashval + p1.m_tuple.get(JSONTuple.hash_index).getIntValue();
+      tmphashval = 37 * tmphashval + p2.m_tuple.get(JSONTuple.hash_index).getIntValue();
       hashvalue = tmphashval;
     }
-
-
-    public Edge(Edge rhs) {
-      p1 = rhs.p1;
-      p2 = rhs.p2;
-      hashvalue = rhs.hashvalue;
-    }
-
 
     @Override
     public boolean equals(Object obj) {
@@ -255,7 +243,7 @@ public class Element {
         return false;
       }
       Edge edge = (Edge) obj;
-      return p1.equals(edge.p1) && p2.equals(edge.p2);
+      return JSONTuple.Equals(p1.m_tuple, edge.p1.m_tuple) && JSONTuple.Equals(p2.m_tuple, edge.p2.m_tuple); 
     }
 
 
@@ -271,12 +259,26 @@ public class Element {
 
 
     public boolean lessThan(Edge rhs) {
-      return p1.lessThan(rhs.p1) || (p1.equals(rhs.p1) && p2.lessThan(rhs.p2));
+    	JsonNode j1 = p1.m_tuple;
+    	JsonNode j2 = p2.m_tuple;
+    	
+    	JsonNode e1 = rhs.p1.m_tuple;
+    	JsonNode e2 = rhs.p2.m_tuple;
+    	
+    	return JSONTuple.LessThan(j1,  e1) || (JSONTuple.Equals(j1,  e1) && JSONTuple.LessThan(j2,  e2));
+    	
     }
 
 
     public boolean greaterThan(Edge rhs) {
-      return p1.greaterThan(rhs.p1) || (p1.equals(rhs.p1) && p2.greaterThan(rhs.p2));
+    	JsonNode j1 = p1.m_tuple;
+    	JsonNode j2 = p2.m_tuple;
+    	
+    	JsonNode e1 = rhs.p1.m_tuple;
+    	JsonNode e2 = rhs.p2.m_tuple;
+    	return JSONTuple.GreaterThan(j1,  e1) || (JSONTuple.Equals(j1,  e1) && JSONTuple.GreaterThan(j2,  e2));
+
+      
     }
 
 
