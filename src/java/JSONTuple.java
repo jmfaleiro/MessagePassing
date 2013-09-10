@@ -6,6 +6,7 @@
 package DelaunayRefinement.src.java;
 
 
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.*;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -19,13 +20,13 @@ public class JSONTuple {
 	
 	private static final ObjectMapper mapper  = new ObjectMapper();
 	
-	private final ArrayNode m_tuple;
+	private final JsonNode m_tuple;
 	
-	public JSONTuple(double a, double b, double c) {
-		m_tuple = mapper.createArrayNode();
-		m_tuple.add(a);
-		m_tuple.add(b);
-		m_tuple.add(c);
+	public JsonNode CreateTuple(double a, double b, double c) {
+		ArrayNode ret = mapper.createArrayNode();
+		ret.add(a);
+		ret.add(b);
+		ret.add(c);
 		
 		int tmphashvalue = 17;
 	    long tmp = Double.doubleToLongBits(a);
@@ -34,22 +35,12 @@ public class JSONTuple {
 	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
 	    tmp = Double.doubleToLongBits(c);
 	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
-	    
-	    m_tuple.add(tmphashvalue);
+	    ret.add(tmphashvalue);
+	    return ret;
 	}
 	
-	public JSONTuple(JSONTuple other) {
-		m_tuple = mapper.createArrayNode();
-		
-		double x_other = other.m_tuple.get(x_index).getDoubleValue();
-		double y_other = (Double)other.m_tuple.get(y_index).getDoubleValue();
-		double z_other = (Double)other.m_tuple.get(z_index).getDoubleValue();
-		int hash_other = (Integer)other.m_tuple.get(hash_index).getIntValue();
-		
-		m_tuple.add(x_other);
-		m_tuple.add(y_other);
-		m_tuple.add(z_other);
-		m_tuple.add(hash_other);
+	public JSONTuple(double a, double b, double c) {
+		m_tuple = CreateTuple(a, b, c);
 	}
 	
 	@Override
@@ -71,12 +62,12 @@ public class JSONTuple {
 	}
 	
 	public boolean lessThan(JSONTuple rhs) {
-		ArrayNode rhs_obj = rhs.m_tuple;
+		JsonNode rhs_obj = rhs.m_tuple;
 		return JSONTuple.LessThan(this.m_tuple, rhs_obj);
 	}
 	
 	public boolean greaterThan(JSONTuple rhs) {
-		ArrayNode rhs_obj = rhs.m_tuple;
+		JsonNode rhs_obj = rhs.m_tuple;
 		return JSONTuple.GreaterThan(this.m_tuple,  rhs_obj);
 	}
 	
@@ -124,18 +115,6 @@ public class JSONTuple {
 		return new JSONTuple(value*x1, value*y1, value*z1);
 	}
 	
-	public int cmp(JSONTuple rhs) {
-		if (equals(rhs)) {
-			return 0;
-		}
-		else if (greaterThan(rhs)) {
-			return 1;
-		}
-		else {
-			return -1;
-		}
-	}
-	
 	public double distance(JSONTuple rhs) {
 		return Math.sqrt(distance_squared(rhs));
 	}
@@ -154,10 +133,6 @@ public class JSONTuple {
 		return new String("(" + m_tuple.get(x_index).getDoubleValue() + ", " + m_tuple.get(y_index).getDoubleValue() + ", " + m_tuple.get(z_index).getDoubleValue() + ")");
 	}
 	
-	public static int cmp(JSONTuple a, JSONTuple b) {
-		return a.cmp(b);
-	}
-	
 	public static double distance(JSONTuple a, JSONTuple b) {
 		return a.distance(b);
 	}
@@ -166,29 +141,7 @@ public class JSONTuple {
 		return b.angle(a, c);
 	}
 	
-	public static ArrayNode CreateTuple(double a, double b, double c){
-		
-		ArrayNode new_coord = mapper.createArrayNode();
-		
-		// Add the coordinates to the JSONObject. 
-		new_coord.add(a);
-		new_coord.add(b);
-		new_coord.add(c);
-		
-		// Compute hash value. 
-		int tmphashvalue = 17;
-	    long tmp = Double.doubleToLongBits(a);
-	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
-	    tmp = Double.doubleToLongBits(b);
-	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
-	    tmp = Double.doubleToLongBits(c);
-	    tmphashvalue = 37 * tmphashvalue + (int) (tmp ^ (tmp >>> 32));
-	    new_coord.add(tmphashvalue);
-	    
-	    return new_coord;
-	}
-	
-	public static double Angle(ArrayNode vertex, ArrayNode end1, ArrayNode end2) {
+	public static double Angle(JsonNode vertex, JsonNode end1, JsonNode end2) {
 		double x_diff1 = end1.get(0).getDoubleValue() - vertex.get(0).getDoubleValue();
 		double y_diff1 = end1.get(1).getDoubleValue() - vertex.get(1).getDoubleValue();
 		double z_diff1 = end1.get(2).getDoubleValue() - vertex.get(2).getDoubleValue();
@@ -202,11 +155,11 @@ public class JSONTuple {
 		return (180 / Math.PI) * Math.acos(d);
 	}
 	
-	public static double Distance(ArrayNode first, ArrayNode second) {
+	public static double Distance(JsonNode first, JsonNode second) {
 		return Math.sqrt(DistanceSquared(first, second));
 	}
 	
-	public static double DistanceSquared(ArrayNode first, ArrayNode second) {
+	public static double DistanceSquared(JsonNode first, JsonNode second) {
 		double x_diff = first.get(0).getDoubleValue() - second.get(0).getDoubleValue();
 		double y_diff = first.get(1).getDoubleValue() - second.get(1).getDoubleValue();
 		double z_diff = first.get(2).getDoubleValue() - second.get(2).getDoubleValue();
@@ -220,7 +173,7 @@ public class JSONTuple {
 				(first.get(2).getDoubleValue() * second.get(2).getDoubleValue()));
 	}
 	
-	public static boolean GreaterThan(ArrayNode coord1, ArrayNode coord2) {
+	public static boolean GreaterThan(JsonNode coord1, JsonNode coord2) {
 		double x1 = coord1.get(0).getDoubleValue();
 		double y1 = coord1.get(1).getDoubleValue();
 		double z1 = coord1.get(2).getDoubleValue();
@@ -252,7 +205,7 @@ public class JSONTuple {
 		return false;	
 	}
 	
-	public static boolean LessThan(ArrayNode coord1, ArrayNode coord2) {
+	public static boolean LessThan(JsonNode coord1, JsonNode coord2) {
 		double x1 = coord1.get(0).getDoubleValue();
 		double y1 = coord1.get(1).getDoubleValue();
 		double z1 = coord1.get(2).getDoubleValue();
@@ -284,7 +237,7 @@ public class JSONTuple {
 		return false;	
 	}
 
-	private static boolean Equals(ArrayNode coord1, ArrayNode coord2) {
+	private static boolean Equals(JsonNode coord1, JsonNode coord2) {
 		double x1 = coord1.get(0).getDoubleValue();
 		double y1 = coord1.get(1).getDoubleValue();
 		double z1 = coord1.get(2).getDoubleValue();
