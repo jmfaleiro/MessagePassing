@@ -49,7 +49,8 @@ public class Mesh {
   private final static int num_indices = 100000;
   public final static String[] indices = new String[num_indices]; 
   private int current_index = 0;
-  public  final HashMap<String, Element> graph = new HashMap<String, Element>();	
+  public final ObjectNode graph = mapper.createObjectNode();
+  //public  final HashMap<String, Element> graph = new HashMap<String, Element>();	
   protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
   protected final LinkedList<Integer> bad_nodes = new LinkedList<Integer>();
 
@@ -68,7 +69,7 @@ public class Mesh {
     return bad_nodes;
   }
   
-  public void putNode(int index, Element value) {
+  public void putNode(int index, ObjectNode value) {
 	  graph.put(indices[index],  value);
   }
   
@@ -123,16 +124,16 @@ public class Mesh {
     int nels = scanner.nextInt();
     scanner.nextInt();
     scanner.nextInt();
-    Element[] elements = new Element[nels];
+    ObjectNode[] elements = new ObjectNode[nels];
     for (int i = 0; i < nels; i++) {
       int index = scanner.nextInt();
       int n1 = scanner.nextInt();
       int n2 = scanner.nextInt();
       int n3 = scanner.nextInt();
-      elements[index] = new Element(JSONTuples[n1], JSONTuples[n2], JSONTuples[n3], this);
-      int graph_index = elements[index].getIndex();
+      elements[index] = Element.CreateElement(JSONTuples[n1],  JSONTuples[n2],  JSONTuples[n3], this);//new Element(JSONTuples[n1], JSONTuples[n2], JSONTuples[n3], this);
+      int graph_index = Element.getIndex(elements[index]);
       
-      if (elements[index].isBad()) {
+      if (Element.isBad(elements[index])) {
     	  bad_nodes.addFirst(graph_index);
       }
       
@@ -142,29 +143,29 @@ public class Mesh {
     return unresolved_edges;
   }
 
-  public void tryResolveEdges(Element elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
+  public void tryResolveEdges(ObjectNode elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
 	  
 	  // 1 edge if it's a segment, otherwise 3. 
-	  int n_edges = 2*elem.getDim() - 3;
+	  int n_edges = 2*Element.getDim(elem) - 3;
 	  
 	  for (int i = 0; i < n_edges; ++i) {
-		  Element.Edge edge = new Element.Edge(elem.getEdge(i));
+		  Element.Edge edge = new Element.Edge(Element.getEdge(elem, i));
 		  
 		  // We've seen this edge before, link the two elements. 
 		  if (to_resolve.containsKey(edge)) {
 			  int neighbor_index = to_resolve.get(edge);
 			  to_resolve.remove(edge);
 			  
-			  Element neighbor = graph.get(indices[neighbor_index]);
+			  ObjectNode neighbor = (ObjectNode)graph.get(indices[neighbor_index]);
 			  
-			  neighbor.resolveNeighbor(elem);
-			  elem.resolveNeighbor(neighbor);
+			  Element.resolveNeighbor(neighbor, elem);
+			  Element.resolveNeighbor(elem,  neighbor);
 		  }
 		  
 		  // Haven't seen the edge before, add a reference to the element so 
 		  // the neighbor can resolve it later. 
 		  else {	
-			  to_resolve.put(edge,  elem.getIndex());
+			  to_resolve.put(edge,  Element.getIndex(elem));
 		  }
 	  }
   }
@@ -178,7 +179,7 @@ public class Mesh {
     scanner.nextInt();
     int nsegs = scanner.nextInt();
     scanner.nextInt();
-    Element[] segments = new Element[nsegs];
+    ObjectNode[] segments = new ObjectNode[nsegs];
     
     for (int i = 0; i < nsegs; i++) {
       int index = scanner.nextInt();
@@ -186,11 +187,11 @@ public class Mesh {
       int n2 = scanner.nextInt();
       scanner.nextInt();
       
-      segments[index] = new Element(JSONTuples[n1], JSONTuples[n2], this);
+      segments[index] = Element.CreateElement(JSONTuples[n1],  JSONTuples[n2],  this); // new Element(JSONTuples[n1], JSONTuples[n2], this);
       
       // Mark it as bad.. 
-      if (segments[index].isBad()) {
-    	  bad_nodes.addFirst(segments[index].getIndex());
+      if (Element.isBad(segments[index])) {
+    	  bad_nodes.addFirst(Element.getIndex(segments[index]));
       }
       
       // Try to resolve the edges..
@@ -199,18 +200,18 @@ public class Mesh {
   }
   
   public void removeNode(int node) {
-	  Element to_remove = (Element)graph.get(indices[node]);
-	  to_remove.kill();
+	  ObjectNode to_remove = (ObjectNode)graph.get(indices[node]);
+	  Element.kill(to_remove);
   }
 
   public boolean containsNode(int node) {
-	  Element to_check = (Element)graph.get(indices[node]);
-	  return !to_check.isDead();
+	  ObjectNode to_check = (ObjectNode)graph.get(indices[node]);
+	  return !Element.isDead(to_check);
   }
   
-  public Element getNodeData(int node) {
+  public ObjectNode getNodeData(int node) {
 	  
-	  Element ret = (Element)graph.get(indices[node]);
+	  ObjectNode ret = (ObjectNode)graph.get(indices[node]);
 	  if (ret == null) {
 		  System.out.println("blah");
 	  }
@@ -246,7 +247,7 @@ public class Mesh {
     return node;
   }
   */
-
+/*
 
   public static boolean verify(EdgeGraph<Element, Element.Edge> mesh) {
     // ensure consistency of elements
@@ -287,4 +288,5 @@ public class Mesh {
     }
     return true;
   }
+  */
 }

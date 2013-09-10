@@ -30,22 +30,21 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.json.simple.JSONObject;
 
 public class Element {
-	
-	private final ObjectNode node;
 
   private static final double MINANGLE = 30.0;
 
-  public boolean isDead() {
+  public static boolean isDead(ObjectNode node) {
 	  return node.get("dead").getBooleanValue();
   }
   
-  public void kill() {
+  public static void kill(ObjectNode node) {
 	  node.put("dead",  true);
   }
 
-  private static ObjectNode CreateElement(int index, JsonNode a, JsonNode b, JsonNode c, Mesh nodes) {
+  public static ObjectNode CreateElement(JsonNode a, JsonNode b, JsonNode c, Mesh nodes) {
 	  ObjectNode ret = Mesh.mapper.createObjectNode();
 	  
+	  int index = nodes.getNextIndex();
 	  ret.put("index",  index);
 	  ret.put("dead",  false);
 	  ret.put("dim",  3);
@@ -103,15 +102,18 @@ public class Element {
 	    ret.put("n1",  -1);
 	    ret.put("n2",  -1);
 	    
+	    nodes.putNode(index, ret);
+	    
 	    return ret;
   }
   
+  /*
   public Element(JsonNode a, JsonNode b, JsonNode c, Mesh nodes) {
 	  int index = nodes.getNextIndex();
 	 node = CreateElement(index, a, b, c, nodes);
 	 nodes.putNode(index,  this);
 	 
-	 /*
+	 
 	 index = nodes.getNextIndex();
 	 dead = false;
 	  
@@ -163,10 +165,11 @@ public class Element {
     }
     
     nodes.putNode(index,  this);
-    */
+    
   }
+  */
   
-  public int getObtuseNeighbor() throws Exception {
+  public static int getObtuseNeighbor(ObjectNode node) throws Exception {
 	  if (node.get("bObtuse").getBooleanValue()) {
 		  switch (node.get("obtuse").getIntValue()) {
 		  case 0:
@@ -184,7 +187,7 @@ public class Element {
 	  }
   }
   
-  public int getNeighbor(int index) {
+  public static int getNeighbor(ObjectNode node, int index) {
 	  switch (index) {
 	  case 0:
 		  return node.get("n0").getIntValue();
@@ -243,9 +246,10 @@ public class Element {
 	  return JSONTuple.CreateTuple(x, y, z);
   }
   
-  private static ObjectNode CreateElement(int index, JsonNode a, JsonNode b, Mesh nodes) {
+  public static ObjectNode CreateElement(JsonNode a, JsonNode b, Mesh nodes) {
 	  ObjectNode ret = Mesh.mapper.createObjectNode();
 	  
+	  int index = nodes.getNextIndex();
 	  boolean dead = false;
 	  ret.put("index",  index);
 	  ret.put("dead",  dead);
@@ -277,15 +281,16 @@ public class Element {
 	  ret.put("radius_squared",  radius_squared);
 	  
 	  ret.put("n0",  -1);
-	  
+	  nodes.putNode(index,  ret);
 	  return ret;
   }
 
+  /*
   public Element(JsonNode a, JsonNode b, Mesh nodes) {
 	  int index = nodes.getNextIndex();
 		 node = CreateElement(index, a, b,nodes);
 		 nodes.putNode(index,  this);
-	  /*
+	  
 	  index = nodes.getNextIndex();
 	  dead = false;
 	  
@@ -310,12 +315,13 @@ public class Element {
     neighbors[0] = -1;
     
     nodes.putNode(index,  this);
-    */
+    
   }
+  */
   
-  public void resolveNeighbor(Element neighbor) throws Exception {
-	  int related_index = isRelated(neighbor);
-	  int neighbor_index = neighbor.node.get("index").getIntValue();
+  public static void resolveNeighbor(ObjectNode node, ObjectNode neighbor) throws Exception {
+	  int related_index = isRelated(node, neighbor);
+	  int neighbor_index = neighbor.get("index").getIntValue();
 	  if (related_index == -1) {
 		  throw new Exception("Called with unrelated elements!");
 	  }
@@ -335,7 +341,7 @@ public class Element {
 	  }
   }
 
-  public void setNeighbor(int index, int value) throws Exception {
+  public void setNeighbor(ObjectNode node, int index, int value) throws Exception {
 	  int dim = node.get("dim").getIntValue();
 	  if (dim == 2) {
 		  if (index == 0) {
@@ -544,9 +550,9 @@ public class Element {
 
   
 
-  public boolean lessThan(Element e) {
+  public boolean lessThan(JsonNode node, JsonNode e) {
 	  int dim = node.get("dim").getIntValue();
-	  int e_dim = e.node.get("dim").getIntValue();
+	  int e_dim = e.get("dim").getIntValue();
     if (dim < e_dim) {
       return false;
     }
@@ -555,7 +561,7 @@ public class Element {
     }
     for (int i = 0; i < dim; i++) {
     	JsonNode my_coord = node.get("coords").get(i);
-    	JsonNode e_coord = e.node.get("coords").get(i);
+    	JsonNode e_coord = e.get("coords").get(i);
     	if (JSONTuple.LessThan(my_coord, e_coord)) {
         return true;
       } else if (JSONTuple.GreaterThan(my_coord, e_coord)) {
@@ -565,26 +571,26 @@ public class Element {
     return false;
   }
   
-  public int isRelated(Element e) {
-    int edim = e.getDim();
+  public static int isRelated(ObjectNode node, ObjectNode e) {
+    int edim = e.get("dim").getIntValue();
     int dim = node.get("dim").getIntValue();
     JsonNode my_edge, e_edge0, e_edge1, e_edge2 = null;
-    my_edge = getEdge(0);
-    e_edge0 = e.getEdge(0);
+    my_edge = getEdge(node, 0);
+    e_edge0 = getEdge(e, 0);
     if (Element.Edge.Equals(my_edge,  e_edge0)) {
       return 0;
     }
-    e_edge1 = e.getEdge(1);
+    e_edge1 = getEdge(e, 1);
     if (Element.Edge.Equals(my_edge,  e_edge1)) {
       return 0;
     }
     if (edim == 3) {
-      e_edge2 = e.getEdge(2);
+      e_edge2 = getEdge(e, 2);
       if (Element.Edge.Equals(my_edge,  e_edge2)) {
         return 0;
       }
     }
-    my_edge = getEdge(1);
+    my_edge = getEdge(node, 1);
     if (Element.Edge.Equals(my_edge,  e_edge0)) { 
       return 1;
     }
@@ -597,7 +603,7 @@ public class Element {
       }
     }
     if (dim == 3) {
-      my_edge = getEdge(2);
+      my_edge = getEdge(node, 2);
       if (Element.Edge.Equals(my_edge,  e_edge0)) {
         return 2;
       }
@@ -628,13 +634,13 @@ public class Element {
   }
 */
 
-  public JsonNode center() {
+  public static JsonNode center(ObjectNode node) {
 	  return node.get("center");
   }
 
 
-  public boolean inCircle(JsonNode p) {
-	  JsonNode center = center();
+  public static boolean inCircle(ObjectNode node, JsonNode p) {
+	  JsonNode center = center(node);
 	  double radius_squared = node.get("radius_squared").getDoubleValue();
 	  double ds = JSONTuple.DistanceSquared(center,  p);
     return ds <= radius_squared;
@@ -656,64 +662,64 @@ public class Element {
     return JSONTuple.angle(b, a, c);
   }
 
-  public int getIndex() {
+  public static int getIndex(ObjectNode node) {
 	  return node.get("index").getIntValue();
   }
   
-  public JsonNode getEdge(int i) {
+  public static JsonNode getEdge(ObjectNode node, int i) {
 	  return node.get("edges").get(i);
   }
 
 
-  public JsonNode getPoint(int i) {
+  public static JsonNode getPoint(ObjectNode node, int i) {
 	  return node.get("coords").get(i);
   }
 
   
   // should the node be processed?
-  public boolean isBad() {
+  public static boolean isBad(ObjectNode node) {
 	  return node.get("bBad").getBooleanValue();
   }
 
 
-  public int getDim() {
+  public static int getDim(ObjectNode node) {
 	  return node.get("dim").getIntValue();
   }
 
 
-  public int numEdges() {
-	  int dim = getDim();
+  public static int numEdges(ObjectNode node) {
+	  int dim = getDim(node);
     return dim + dim - 3;
   }
 
 
-  public boolean isObtuse() {
+  public static boolean isObtuse(ObjectNode node) {
 	  return node.get("bObtuse").getBooleanValue();
   }
 
 
-  public JsonNode getRelatedEdge(Element e) {
+  public JsonNode getRelatedEdge(ObjectNode node, ObjectNode e) {
     // Scans all the edges of the two elements and if it finds one that is
     // equal, then sets this as the Edge of the EdgeRelation
-    int edim = e.getDim();
-    int dim = getDim();
+    int edim = getDim(e);
+    int dim = getDim(node);
     JsonNode my_edge, e_edge0, e_edge1, e_edge2 = null;
-    my_edge = getEdge(0);
-    e_edge0 = e.getEdge(0);
+    my_edge = getEdge(node, 0);
+    e_edge0 = getEdge(e, 0);
     if (Element.Edge.Equals(my_edge,  e_edge0)) {
       return my_edge;
     }
-    e_edge1 = e.getEdge(1);
+    e_edge1 = getEdge(e, 1);
     if (Element.Edge.Equals(my_edge,  e_edge1)) {
       return my_edge;
     }
     if (edim == 3) {
-      e_edge2 = e.getEdge(2);
+      e_edge2 = getEdge(e, 2);
       if (Element.Edge.Equals(my_edge,  e_edge2)) {
         return my_edge;
       }
     }
-    my_edge = getEdge(1);
+    my_edge = getEdge(node, 1);
     if (Element.Edge.Equals(my_edge,  e_edge0)) {
       return my_edge;
     }
@@ -726,7 +732,7 @@ public class Element {
       }
     }
     if (dim == 3) {
-      my_edge = getEdge(2);
+      my_edge = getEdge(node, 2);
       if (Element.Edge.Equals(my_edge,  e_edge0)) {
         return my_edge;
       }

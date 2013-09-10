@@ -33,6 +33,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import org.codehaus.jackson.node.ObjectNode;
+
 
 public class Subgraph {
   private final LinkedList<Integer> nodes;
@@ -53,8 +55,8 @@ public class Subgraph {
   }
   
   public boolean addNode(int n, Mesh mesh) {
-	  Element node_data = mesh.getNodeData(n);
-	  if (node_data.isBad()) {
+	  ObjectNode node_data = mesh.getNodeData(n);
+	  if (Element.isBad(node_data)) {
 		  bad_nodes.add(n);
 	  }
 	  return nodes.add(n);
