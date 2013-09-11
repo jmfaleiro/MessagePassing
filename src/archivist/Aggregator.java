@@ -4,11 +4,11 @@ import mp.*;
 
 public class Aggregator {
 
-	private ShMemServer server;
+	private ShMemAcquirer server;
 	
 	public Aggregator(int node_id, IProcess process) {
 		
-		server = new ShMemServer(process, node_id);
+		server = new ShMemAcquirer(process, node_id);
 		server.start();
 	}
 }

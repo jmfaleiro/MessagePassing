@@ -55,7 +55,7 @@ public class UrlAggregator implements IProcess {
 		
 		
 		IProcess url_agg_proc = new UrlAggregator();
-		ShMemServer s = new ShMemServer(url_agg_proc, 2);
+		ShMemAcquirer s = new ShMemAcquirer(url_agg_proc, 2);
 		s.start();
 	}
 }

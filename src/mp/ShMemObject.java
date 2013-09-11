@@ -21,7 +21,7 @@ public class ShMemObject extends JSONObject {
 	
 	// The key the parent uses to refer to this object. We need the key to update timestamp
 	// information in the parent recursively. 
-	private String parent_key;
+	private Object parent_key;
 	
 	// The current value of "time". All puts to an ShMemObject will take this value. The value
 	// is changed whenever we fork. 
@@ -166,7 +166,7 @@ public class ShMemObject extends JSONObject {
 	// Invariant: If we're "PUT"-ting an ShMemObject, then the difflist
 	//			  in the entire tree is *empty*. 
 	//
-	public Object put(String key, Object value) throws ShMemFailure{
+	public Object put(Object key, Object value){
 		
 		// We wrap the value in the "to_add" JSONObject.
 		JSONObject to_add = new JSONObject();
@@ -195,7 +195,8 @@ public class ShMemObject extends JSONObject {
 	// We need a new "get" method because values are wrapped inside a timestamped JSONObject. 
 	// We remove the raw value from its wrapper and return the raw value. 
 	// 
-	public Object get(String key)  {
+	@Override
+	public Object get(Object key)  {
 		
 		JSONObject wrapper = (JSONObject)super.get(key);
 		return wrapper.get("value");
@@ -207,7 +208,8 @@ public class ShMemObject extends JSONObject {
 	// process appropriately. Merge understands when to garbage collect tombstones. 
 	//
 	// XXX: This method looks buggy!
-	public Object remove(String key) throws ShMemFailure {
+	@Override
+	public Object remove(Object key) {
 		Object ret = super.remove(key);
 		
 		// Update diff meta data
@@ -218,15 +220,15 @@ public class ShMemObject extends JSONObject {
 	}
 	
 	// Returns the timestamped wrapper. 
-	private Object get_wrapper(String key) {
+	private Object get_wrapper(Object key) {
 		return super.get(key);
 	}
 	
 	// Recursively update the given ShMemObject's (cur) ancestor's timestamps
 	// to reflect a new update. 
-	private static void update_difftree(ShMemObject cur, ITimestamp ts) throws ShMemFailure{
+	private static void update_difftree(ShMemObject cur, ITimestamp ts) {
 		while (cur.parent != null) {
-			String key = cur.parent_key;
+			Object key = cur.parent_key;
 			
 			// Get cur's wrapper in its parent. 
 			JSONObject val = (JSONObject)cur.parent.get_wrapper(key);

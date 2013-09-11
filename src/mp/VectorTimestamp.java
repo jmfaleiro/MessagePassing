@@ -48,16 +48,30 @@ public class VectorTimestamp implements ITimestamp {
 		return ret;
 	}
 	
-	public Comparison Compare(ITimestamp other) throws ShMemFailure {
+	public Comparison Compare(ITimestamp other){
 		
 		// Do some error handling. 
 		if (other.getClass() != VectorTimestamp.class) {
-			throw new ShMemFailure("Got a non-vector timestamp to compare with");
+			try {
+				throw new Exception("Other class is not a vector timestamp!");
+			}
+			catch (Exception e) {
+				e.printStackTrace(System.out);
+				System.err.println(e.toString());
+			}
+			System.exit(-1);
 		}
 		
 		VectorTimestamp other_time = (VectorTimestamp)other;
 		if (other_time.vector_size_ != vector_size_) {
-			throw new ShMemFailure("Vector sizes are not the same!");
+			try {
+				throw new Exception("Got unequal vectors!");
+			}
+			catch (Exception e) {
+				e.printStackTrace(System.out);
+				System.err.println(e.toString());
+			}
+			System.exit(-1);
 		}
 		
 		boolean less_than = false;
@@ -83,13 +97,31 @@ public class VectorTimestamp implements ITimestamp {
 		}
 	}
 	
-	public void Union(ITimestamp other) throws ShMemFailure {
+	public void Union(ITimestamp other){
 		if (other.getClass() != VectorTimestamp.class) {
-			throw new ShMemFailure("Other timestamp is not of type VectorTimestamp!");
+			try {
+				throw new Exception("Other timestamp is not of type VectorTimestamp!");
+			}
+			catch(Exception e) {
+				e.printStackTrace(System.err);
+				System.err.println(e.toString());
+			}
+			finally {
+				System.exit(-1);
+			}
 		}
 		VectorTimestamp other_vect = (VectorTimestamp)other;
 		if (other_vect.vector_size_ != vector_size_) {
-			throw new ShMemFailure("Vector sizes don't match!");
+			try {
+				throw new Exception("Vector sizes don't match!");
+			}
+			catch(Exception e) {
+				e.printStackTrace(System.err);
+				System.err.println(e.toString());
+			}
+			finally {
+				System.exit(-1);
+			}
 		}
 		for (int i = 0; i < vector_size_; ++i) {
 			time_[i] = time_[i] >= other_vect.time_[i] ? time_[i] : other_vect.time_[i];

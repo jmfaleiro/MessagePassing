@@ -64,7 +64,7 @@ public class VolumeAggregator implements IProcess{
 		
 	
 		IProcess vol_agg_proc = new VolumeAggregator();
-		ShMemServer s = new ShMemServer(vol_agg_proc, 4);
+		ShMemAcquirer s = new ShMemAcquirer(vol_agg_proc, 4);
 		s.start();
 	}
 }

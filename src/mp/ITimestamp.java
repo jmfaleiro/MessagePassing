@@ -9,8 +9,8 @@ public interface ITimestamp {
 	}	
 	
 	String Serialize();
-	Comparison Compare(ITimestamp other) throws ShMemFailure;
+	Comparison Compare(ITimestamp other);
 	void LocalIncrement();
 	ITimestamp Copy();
-	void Union(ITimestamp other) throws ShMemFailure;
+	void Union(ITimestamp other);
 }

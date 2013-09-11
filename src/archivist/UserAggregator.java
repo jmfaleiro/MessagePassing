@@ -43,7 +43,7 @@ public class UserAggregator implements IProcess {
 		
 		
 		IProcess user_agg_proc = new UserAggregator();
-		ShMemServer s = new ShMemServer(user_agg_proc, 3);
+		ShMemAcquirer s = new ShMemAcquirer(user_agg_proc, 3);
 		s.start();
 	}
 }

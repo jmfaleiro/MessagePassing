@@ -36,7 +36,7 @@ public class SourceAggregator implements IProcess {
 		
 	
 		IProcess source_agg_proc = new SourceAggregator();
-		ShMemServer s = new ShMemServer(source_agg_proc, 1);
+		ShMemAcquirer s = new ShMemAcquirer(source_agg_proc, 1);
 		s.start();
 	}
 	

@@ -33,7 +33,7 @@ public class RetweetAggregator implements IProcess {
 		
 		
 		IProcess rt_agg_proc = new RetweetAggregator();
-		ShMemServer s = new ShMemServer(rt_agg_proc, 0);
+		ShMemAcquirer s = new ShMemAcquirer(rt_agg_proc, 0);
 		s.start();
 	}
 }

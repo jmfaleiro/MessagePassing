@@ -112,7 +112,7 @@ public class WordAggregator implements IProcess{
 	public static void main(String [] args) {
 		
 		IProcess word_agg_proc = new WordAggregator();
-		ShMemServer s = new ShMemServer(word_agg_proc, 5);
+		ShMemAcquirer s = new ShMemAcquirer(word_agg_proc, 5);
 		s.start();
 	}
 }
