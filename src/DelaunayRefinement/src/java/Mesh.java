@@ -25,9 +25,6 @@ File: Mesh.java
 package DelaunayRefinement.src.java;
 
 
-import objects.graph.Edge;
-import objects.graph.EdgeGraph;
-import objects.graph.Node;
 
 import java.io.FileInputStream;
 import java.util.zip.GZIPInputStream;
@@ -51,7 +48,7 @@ public class Mesh {
   private int current_index = 0;
   public final ObjectNode graph = mapper.createObjectNode();
   //public  final HashMap<String, Element> graph = new HashMap<String, Element>();	
-  protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
+  //protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
   protected final LinkedList<Integer> bad_nodes = new LinkedList<Integer>();
 
   static {
