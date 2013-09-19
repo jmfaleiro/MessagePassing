@@ -101,14 +101,20 @@ public class ShMemObject extends ObjectNode {
 		}
 	}
 	
+	private ArrayNode getNodeTimestamp(String key) {
+		return (ArrayNode)super.get(key).get("shmem_timestamp");
+	}
+	
+	
+	
 	public static ObjectNode get_diff_tree(JsonNode obj, ArrayNode ts) {
 		ObjectNode ret = ShMem.mapper.createObjectNode();
 		Iterator<String> keys = obj.getFieldNames();
 		
 		while (keys.hasNext()) {
 			String cur = keys.next();
-			JsonNode value = obj.get(cur).get("value");
-			ArrayNode cur_time = (ArrayNode)obj.get(cur).get("shmem_timestamp");
+			JsonNode value = obj.get(cur);
+			ArrayNode cur_time = ((ShMemObject)obj).getNodeTimestamp(cur);
 			
 			if (VectorTimestamp.Compare(ts, cur_time) == Comparison.LT) {
 				JsonNode value_tree;
@@ -279,7 +285,7 @@ public class ShMemObject extends ObjectNode {
 	public void put(String fieldname, ShMemObject v) {
 		ObjectNode to_add = ShMem.mapper.createObjectNode();
 		to_add.put("value", v);
-		to_add.put("shmem_timestamp", VectorTimestamp.Copy(v.getTimestamp()));
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(v.getTime()));
 		super.put(fieldname,  to_add);
 		v.parent = this;
 		v.parent_key = fieldname;

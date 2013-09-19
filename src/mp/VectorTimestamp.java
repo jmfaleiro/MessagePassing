@@ -10,9 +10,10 @@ public class VectorTimestamp {
 
 	public static int s_vector_size;
 	public static int s_local_index;
-	public static ArrayNode s_default = CreateDefault();
+	public static ArrayNode s_default;
+	public static ArrayNode s_zero;
 	
-	private static ArrayNode CreateDefault() {
+	public static void CreateDefault() {
 		ArrayNode ret = ShMem.mapper.createArrayNode();
 		for (int i = 0; i < s_vector_size; ++i) {
 			if (i == s_local_index) {
@@ -23,6 +24,14 @@ public class VectorTimestamp {
 			}
 		}
 		
+		s_default = ret;
+	}
+	
+	public static ArrayNode CreateZero() {
+		ArrayNode ret = ShMem.mapper.createArrayNode();
+		for (int i = 0; i < s_vector_size; ++i) {
+			ret.add(0);
+		}
 		return ret;
 	}
 	
@@ -70,8 +79,8 @@ public class VectorTimestamp {
 		for (int i = 0; i < len; ++i) {
 			int value1 = vector1.get(i).getIntValue();
 			int value2 = vector2.get(i).getIntValue();
-			bigger_than = value1 > value2;
-			less_than = value2 > value1;
+			bigger_than |= value1 > value2;
+			less_than |= value2 > value1;
 		}
 		
 		if (less_than && bigger_than) {

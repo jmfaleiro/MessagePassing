@@ -52,10 +52,11 @@ public class ShMem {
 	public static void Init(int node_id) {
 		VectorTimestamp.s_local_index = node_id;
 		VectorTimestamp.s_vector_size = addresses.size();
+		VectorTimestamp.CreateDefault();
 		m_last_sync = new HashMap<Integer, ArrayNode>();
 		
 		for (int i = 0; i < addresses.size(); ++i)
-			m_last_sync.put(i,  VectorTimestamp.Copy(VectorTimestamp.s_default));
+			m_last_sync.put(i,  VectorTimestamp.CreateZero());
 		
 		ShMemObject.m_now = VectorTimestamp.Copy(VectorTimestamp.s_default); 
 		ShMemObject.cur_node_ = node_id;
