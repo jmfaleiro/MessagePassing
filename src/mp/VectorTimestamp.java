@@ -1,21 +1,97 @@
 package mp;
 
+import mp.ITimestamp.Comparison;
+
+import org.codehaus.jackson.node.ArrayNode;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
-public class VectorTimestamp implements ITimestamp {
+public class VectorTimestamp {
 
+	public static int s_vector_size;
+	public static int s_local_index;
+	public static ArrayNode s_default = CreateDefault();
+	
+	private static ArrayNode CreateDefault() {
+		ArrayNode ret = ShMem.mapper.createArrayNode();
+		for (int i = 0; i < s_vector_size; ++i) {
+			if (i == s_local_index) {
+				ret.add(1);
+			}
+			else {
+				ret.add(0);
+			}
+		}
+		
+		return ret;
+	}
+	
+	public static void CopyFromTo(ArrayNode from, ArrayNode to) {
+		for (int i = 0; i < s_vector_size; ++i) {
+			to.insert(i, from.get(i).getIntValue());
+		}
+	}
+	
+	public static ArrayNode Copy(ArrayNode node) {
+		ArrayNode ret = ShMem.mapper.createArrayNode();
+		for (int i = 0; i < s_vector_size; ++i) {
+			ret.add(node.get(i));
+		}
+		return ret;
+	}
+	
+	public static void Union(ArrayNode result, ArrayNode with) {
+		int len = result.size();
+		for (int i = 0; i < len; ++i) {
+			int result_value = result.get(i).getIntValue();
+			int with_value = with.get(i).getIntValue();
+			
+			result.insert(i, result_value > with_value?result_value : with_value);
+		}
+	}
+	
+	public static void MergeTime(ArrayNode vector1, ArrayNode vector2) {
+		for (int i = 0; i < s_vector_size; ++i) {
+			int value1 = vector1.get(i).getIntValue();
+			int value2 = vector2.get(i).getIntValue();
+			vector1.insert(i,  value1 > value2? value1 : value2);
+		}
+	}
+	
+	public static void IncrementLocal(ArrayNode vector) {
+		vector.insert(s_local_index,  vector.get(s_local_index).getIntValue()+1);
+	}
+	
+	public static Comparison Compare(ArrayNode vector1, ArrayNode vector2) {
+		boolean less_than = false;
+		boolean bigger_than = false;
+		
+		int len = s_vector_size;
+		for (int i = 0; i < len; ++i) {
+			int value1 = vector1.get(i).getIntValue();
+			int value2 = vector2.get(i).getIntValue();
+			bigger_than = value1 > value2;
+			less_than = value2 > value1;
+		}
+		
+		if (less_than && bigger_than) {
+			return Comparison.NONE;
+		}
+		else if (less_than) {
+			return Comparison.LT;
+		}
+		else if (bigger_than) {
+			return Comparison.GT;
+		}
+		else {
+			return Comparison.EQ;
+		}
+	}
+	
 	private long[] time_;
 	private int vector_size_;
 	private int local_index_;
-		
-	public ITimestamp Copy() {
-		VectorTimestamp ret = new VectorTimestamp();
-		ret.vector_size_ = vector_size_;
-		ret.local_index_ = local_index_;
-		ret.time_ = time_.clone();
-		return ret;
-	}
+	
 	
 	public String Serialize() {
 		String ret = "";
@@ -47,89 +123,4 @@ public class VectorTimestamp implements ITimestamp {
 			ret.time_[i] = 0;
 		return ret;
 	}
-	
-	public Comparison Compare(ITimestamp other){
-		
-		// Do some error handling. 
-		if (other.getClass() != VectorTimestamp.class) {
-			try {
-				throw new Exception("Other class is not a vector timestamp!");
-			}
-			catch (Exception e) {
-				e.printStackTrace(System.out);
-				System.err.println(e.toString());
-			}
-			System.exit(-1);
-		}
-		
-		VectorTimestamp other_time = (VectorTimestamp)other;
-		if (other_time.vector_size_ != vector_size_) {
-			try {
-				throw new Exception("Got unequal vectors!");
-			}
-			catch (Exception e) {
-				e.printStackTrace(System.out);
-				System.err.println(e.toString());
-			}
-			System.exit(-1);
-		}
-		
-		boolean less_than = false;
-		boolean bigger_equal = false;
-		
-		for (int i = 0; i < vector_size_; ++i) {
-			if (time_[i] >= other_time.time_[i]) {
-				bigger_equal = true;
-			}
-			else {
-				less_than = true;
-			}
-		}
-		
-		if (less_than && bigger_equal) {
-			return Comparison.NONE;
-		}
-		else if (bigger_equal) {
-			return Comparison.GE;
-		}
-		else {
-			return Comparison.LT;
-		}
-	}
-	
-	public void Union(ITimestamp other){
-		if (other.getClass() != VectorTimestamp.class) {
-			try {
-				throw new Exception("Other timestamp is not of type VectorTimestamp!");
-			}
-			catch(Exception e) {
-				e.printStackTrace(System.err);
-				System.err.println(e.toString());
-			}
-			finally {
-				System.exit(-1);
-			}
-		}
-		VectorTimestamp other_vect = (VectorTimestamp)other;
-		if (other_vect.vector_size_ != vector_size_) {
-			try {
-				throw new Exception("Vector sizes don't match!");
-			}
-			catch(Exception e) {
-				e.printStackTrace(System.err);
-				System.err.println(e.toString());
-			}
-			finally {
-				System.exit(-1);
-			}
-		}
-		for (int i = 0; i < vector_size_; ++i) {
-			time_[i] = time_[i] >= other_vect.time_[i] ? time_[i] : other_vect.time_[i];
-		}
-	}
-
-	public void LocalIncrement() {
-		++time_[local_index_];
-	}
-
 }

@@ -4,7 +4,8 @@ public interface ITimestamp {
 
 	public enum Comparison {
 		LT,
-		GE,
+		GT,
+		EQ,
 		NONE,
 	}	
 	

@@ -3,6 +3,9 @@ package test;
 
 import java.io.*;
 
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -191,9 +194,9 @@ public class Blackscholes {
 	}
 	
 	private static void process(int node_number) {
-		JSONArray data = (JSONArray)ShMem.state_.get("data");
+		ArrayNode data = (ArrayNode)ShMem.state_.get("data");
 		ShMemObject results = (ShMemObject)ShMem.state_.get("results");
-		long num_threads = (Long)ShMem.state_.get("num_threads");
+		long num_threads = ShMem.state_.get("num_threads").getLongValue();
 		long start = ((long)node_number - 1) * (data.size() / num_threads);
 		long end = start + (data.size()) / num_threads;
 		
@@ -201,13 +204,13 @@ public class Blackscholes {
 			
 			int i_usable = ((Long)i).intValue();
 			
-			JSONObject cur_data = (JSONObject)data.get(i_usable);
-			double s = (Double)cur_data.get("s");
-			double strike = (Double)cur_data.get("strike");
-			double r = (Double)cur_data.get("r");
-			double v = (Double)cur_data.get("v");
-			double t = (Double)cur_data.get("t");
-			long otype = (long)((String)cur_data.get("OptionType")).charAt(0);
+			JsonNode cur_data = data.get(i_usable);
+			double s = (Double)cur_data.get("s").getDoubleValue();
+			double strike = (Double)cur_data.get("strike").getDoubleValue();
+			double r = (Double)cur_data.get("r").getDoubleValue();
+			double v = (Double)cur_data.get("v").getDoubleValue();
+			double t = (Double)cur_data.get("t").getDoubleValue();
+			long otype = cur_data.get("OptionType").getTextValue().charAt(0);
 			
 			double price = Blackscholes.BlkSchlsEqEuroNoDiv(s, strike,
 											   				r, v, t, otype,
@@ -223,7 +226,7 @@ public class Blackscholes {
 	
 	private static void parse_options(ShMemObject memory, String input_file) {
 		
-		JSONArray data_add = new JSONArray();
+		ArrayNode data_add = ShMem.mapper.createArrayNode();
 		ShMemObject results_add = new ShMemObject();
 		
 		//Read input data from file
@@ -246,12 +249,11 @@ public class Blackscholes {
 	    			throw toThrow;
 	    		}
 	    		
-	    		JSONObject data_value =  new JSONObject();
+	    		ObjectNode data_value =  ShMem.mapper.createObjectNode();
 	    		
 	    		data_value.put("s",  Double.parseDouble(parts[0]));
 	    		data_value.put("strike",  Double.parseDouble(parts[1]));
 	    		data_value.put("r",  Double.parseDouble(parts[2]));
-	    		data_value.put("divq",  Double.parseDouble(parts[3]));
 	    		data_value.put("v", Double.parseDouble(parts[4]));
 	    		data_value.put("t", Double.parseDouble(parts[5]));
 	    		data_value.put("OptionType",  Character.toString(parts[6].charAt(0)));

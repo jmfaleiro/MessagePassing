@@ -1,9 +1,11 @@
 package mp;
 
-import org.json.simple.*;
+
 
 import java.util.*;
 import java.util.concurrent.locks.*;
+
+import org.codehaus.jackson.node.ObjectNode;
 
 //
 // This class is used to service acquire requests. Not visible to
@@ -14,7 +16,7 @@ public class DeltaStore {
 	
 	// XXX: Assume that we always get releases from other processes in 
 	// the right order. The use of sockets guarantees this. 
-	private Map<Integer, Queue<JSONObject>> acquired_state_;
+	private Map<Integer, Queue<ObjectNode>> acquired_state_;
 	
 	// Use the appropriate lock on an acquire call. Sleep using the corresponding
 	// condition variable.
@@ -22,11 +24,11 @@ public class DeltaStore {
 	private final Map<Integer, Condition> conditions_ = new HashMap<Integer, Condition>();
 	
 	public DeltaStore() {
-		acquired_state_ = new HashMap<Integer, Queue<JSONObject>>();
+		acquired_state_ = new HashMap<Integer, Queue<ObjectNode>>();
 		
 		// Initialize each of the lists in the map of acquired state. 
 		for (Integer proc : ShMem.addresses.keySet()) {
-			acquired_state_.put(proc,  new LinkedList<JSONObject>());
+			acquired_state_.put(proc,  new LinkedList<ObjectNode>());
 		}
 		
 		// Initialize the condition and lock maps for synchronizing between
@@ -42,7 +44,7 @@ public class DeltaStore {
 	// 
 	// Called when the ShMemServer gets a newly released value.  
 	//
-	public void Push(int from, JSONObject delta) {
+	public void Push(int from, ObjectNode delta) {
 		
 		// Grab the appropriate queue's lock, we're about to perform a write. 
 		locks_.get(from).lock();
@@ -56,10 +58,10 @@ public class DeltaStore {
 	// 
 	// Called when we need to acquire from another process. 
 	// 
-	public JSONObject Pop(int from) {
+	public ObjectNode Pop(int from) {
 		
 		// What to return..
-		JSONObject ret = null;
+		ObjectNode ret = null;
 		
 		// We need to acquire the queue lock because we're reading from it. 
 		locks_.get(from).lock();

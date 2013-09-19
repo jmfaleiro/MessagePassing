@@ -11,8 +11,10 @@ import java.util.*;
 import java.util.concurrent.locks.*;
 
 import org.apache.commons.lang3.tuple.*;
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.node.ObjectNode;
 
-import org.json.simple.*;
 
 // Used to release state to other processes in the system.
 // The methods in this class are NOT thread-safe.
@@ -20,6 +22,9 @@ public class ShMemReleaser {
 	
 	private final Lock queue_lock_ = new ReentrantLock();
 	private final Condition queue_condition_ = queue_lock_.newCondition();
+	
+	// We need to keep the in-memory representation of the serialized list in 
+	// this queue of stuff. 
 	private final Queue<Pair<Integer, String>> send_queue_ = new LinkedList<Pair<Integer, String>>();
 	
 	private int me_;
@@ -35,9 +40,15 @@ public class ShMemReleaser {
 	}
 	
 	// Add an element to the send queue. 
-	public void Release(int to, JSONObject state) {
+	public void Release(int to, ObjectNode state) {
 		queue_lock_.lock();
-		send_queue_.add(Pair.of(to,  state.toJSONString()));
+		try {
+			send_queue_.add(Pair.of(to,  ShMem.mapper.writeValueAsString(state)));
+		}
+		catch (Exception e) {
+			e.printStackTrace(System.out);
+			System.exit(-1);
+		}
 		
 		// Wake-up the internal sender thread in case it's sleeping. 
 		queue_condition_.signal();
@@ -120,11 +131,10 @@ public class ShMemReleaser {
 				}
 			}
 			
-			
-			JSONObject to_send = new JSONObject();
+			ObjectNode to_send = ShMem.mapper.createObjectNode();
 			to_send.put("releaser", me_);
 			to_send.put("argument",  release_state.getRight());
-			out.println(to_send.toJSONString());
+			out.println(to_send.toString());
 			
 			out.close();
 			try {

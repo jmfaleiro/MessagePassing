@@ -11,6 +11,10 @@ import java.util.*;
 
 
 import org.apache.commons.lang3.tuple.*;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 
 //
 // This should be run on the node on which we want to run forked computations. 
@@ -45,69 +49,60 @@ public class ShMemAcquirer implements Runnable {
 		thread_.start();
 	}
 	
+	private class LongConnection implements Runnable {
+		
+		private BufferedReader m_in;
+		private PrintWriter m_out;
+		private ObjectMapper m_mapper;
+		
+		public LongConnection(Socket conx) {
+			
+			try {
+				m_in = new BufferedReader(new InputStreamReader(conx.getInputStream()));
+				m_out = new PrintWriter(conx.getOutputStream(), true);
+			}
+			catch (Exception e) {
+				e.printStackTrace(System.err);
+				System.exit(-1);
+			}
+		}
+		
+		public void run() {
+			while (true) {
+				ObjectNode received_delta = null;
+				try {
+					received_delta = m_mapper.readValue(m_in,  ObjectNode.class);
+				} 
+				catch (Exception e) {
+					e.printStackTrace(System.err);
+					System.exit(-1);
+				}
+				received_state_.Push(received_delta.get("releaser").getIntValue(),
+									 (ObjectNode)received_delta.get("argument"));
+			}
+		}
+		
+		
+	}
+	
 	@SuppressWarnings("unchecked")
 	public void run() {
-		
-		// The service is not multi-threaded. The service should be stateless, so we 
-		// shouldn't really care about any co-ordination except for basic book-keeping
-		// data structures. 
 		while (true) {
 			
 			// State associated with a client connection. 
 			Socket client_socket = null;
-			BufferedReader in = null;
-			PrintWriter out = null;
-			JSONObject ret = null;
 			
 			// Wait for a client to connect and initialize the input and output streams.
 			try {
 				client_socket = server_.accept();
-				in = new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
-				out = new PrintWriter(client_socket.getOutputStream(), true);
 			}
 			// If we see an error, it's probably our fault. Quit immediately. 
 			catch(IOException e) {
 				e.printStackTrace();
 				System.exit(-1);
 			}
-			
-			// Try to parse out a JSON argument from the contents of the request. 
-			JSONParser parser = new JSONParser();
-			
-			JSONObject arg = null;
-			try {
-				arg = (JSONObject)parser.parse(in.readLine());
-			}
-			// IOException should just quit immediately, debug this..
-			catch(IOException e) {
-				e.printStackTrace();
-				System.exit(-1);
-			}
-			// Not our fault, communicate failure to the client. 
-			catch(ParseException e) {
-				ret = failure_message();
-			}
-			
-			
-			if (ret == null) {
-				
-				// Try to parse out a versioned object - which we encode as a JSONArray -
-				// from the client's request. If it succeeds, call "process", otherwise, 
-				// communicate failure to the client. 
-				try {
-					
-					// Get the argument and get the fork_id. 
-					JSONObject versioned_argument = (JSONObject)parser.parse((String)arg.get("argument"));
-					int releaser = ((Long)arg.get("releaser")).intValue();
-					received_state_.Push(releaser,  versioned_argument);
-				}
-				// We return a failure message in case we get "is alive" messages as well.
-				// All the client really needs is *some* response from the server, we don't
-				// really care about the contents of the message. 
-				catch (Exception e) {
-					ret = failure_message();
-				}	
-			}
+			Thread conx_thread = new Thread(new LongConnection(client_socket));
+			conx_thread.start();
 		}
 	}
 	

@@ -5,9 +5,10 @@ import java.net.*;
 import java.io.*;
 
 import org.apache.commons.lang3.tuple.*;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
 
-import org.json.simple.*;
-import org.json.simple.parser.*;
 
 //
 // Use this class to manage forks. Automatically keeps track of the 
@@ -18,11 +19,13 @@ public class ShMem {
 	
 	// Address book populated from disk. 
 	public static Map<Integer, Pair<String, Integer>> addresses;
+	public static ObjectMapper mapper;
 
 	static {
 		Properties prop = new Properties();
 		String config_path = "mp.properties";
 		addresses = new HashMap<Integer, Pair<String, Integer>>();	
+		mapper = new ObjectMapper();
 		try {
 			FileInputStream fi = new FileInputStream(config_path);
 			prop.load(fi);
@@ -44,16 +47,17 @@ public class ShMem {
 	
 	// We need to keep the last time we released to extract the appropriate
 	// deltas from state_ while releasing. 
-	private static Map<Integer, ITimestamp> last_sync_;  
+	private static Map<Integer, ArrayNode> m_last_sync;  
 	
 	public static void Init(int node_id) {
-		last_sync_ = new HashMap<Integer, ITimestamp>();
-		ITimestamp default_time = VectorTimestamp.Default(addresses.size(),  node_id);
-		for (int i = 0; i < addresses.size(); ++i)
-			last_sync_.put(i,  default_time);
+		VectorTimestamp.s_local_index = node_id;
+		VectorTimestamp.s_vector_size = addresses.size();
+		m_last_sync = new HashMap<Integer, ArrayNode>();
 		
-		ShMemObject.now_ = default_time.Copy();
-		ShMemObject.now_.LocalIncrement();
+		for (int i = 0; i < addresses.size(); ++i)
+			m_last_sync.put(i,  VectorTimestamp.Copy(VectorTimestamp.s_default));
+		
+		ShMemObject.m_now = VectorTimestamp.Copy(VectorTimestamp.s_default); 
 		ShMemObject.cur_node_ = node_id;
 		
 		state_ = new ShMemObject();
@@ -67,17 +71,20 @@ public class ShMem {
 	// XXX: Automatically blocks the calling thread if
 	// the state isn't yet available. 
 	public static void Acquire(int from) throws ShMemFailure {
-		ITimestamp since = last_sync_.get(from);
+		ArrayNode since = m_last_sync.get(from);
 		
 		// - Get the appropriate delta.
 		// - Merge it into state_. 
 		// - Change now_ appropriately.
 		// - Update last_sync_.
-		JSONObject delta = deltas_.Pop(from);
+		ObjectNode delta = deltas_.Pop(from);
 		state_.merge(delta, since);
-		ShMemObject.now_ = state_.MergeTime();
-		last_sync_.put(from,  ShMemObject.now_.Copy());
-		ShMemObject.now_.LocalIncrement();
+		
+		
+		
+		VectorTimestamp.CopyFromTo(state_.getTime(), ShMemObject.m_now);
+		m_last_sync.put(from,  VectorTimestamp.Copy(ShMemObject.m_now));
+		VectorTimestamp.IncrementLocal(ShMemObject.m_now);
 	}
 	
 	// Called from the application. Release state to another process. 
@@ -85,22 +92,16 @@ public class ShMem {
 	public static void Release(int to) {
 		
 		// Get the timestamp of the last release. 
-		ITimestamp last_sync = last_sync_.get(to);
+		ArrayNode last_sync = m_last_sync.get(to);
 		
 		// Extract the appropriate delta from state_ (all modifications to
 		// state since the last time we released to the process we're releasing
 		// to).
-		JSONObject cur_delta = null;
-		try {
-			cur_delta = ShMemObject.get_diff_tree(state_, last_sync);
-		}
-		catch (ShMemFailure e) {
-			System.out.println(e.msg);
-			System.exit(-1);
-		}
+		ObjectNode cur_delta = null;
+		cur_delta = ShMemObject.get_diff_tree(state_, last_sync);
 		assert(cur_delta != null);						// Make sure we have a valid delta. 
-		last_sync_.put(to,  ShMemObject.now_.Copy());	// Deep copy timestamp.
-		ShMemObject.now_.LocalIncrement();				// Increment time.
+		m_last_sync.put(to,  VectorTimestamp.Copy(ShMemObject.m_now));	// Deep copy timestamp.
+		VectorTimestamp.IncrementLocal(ShMemObject.m_now);								// Increment time.
 		releaser_.Release(to,  cur_delta);				// Release (asynchronously). 
 	}
 

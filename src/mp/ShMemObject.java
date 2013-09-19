@@ -3,7 +3,12 @@ package mp;
 
 import mp.ITimestamp.Comparison;
 
-import org.json.simple.*;
+import org.codehaus.jackson.*;
+import org.codehaus.jackson.node.*;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
+
+import java.math.BigDecimal;
 import java.util.*;
 
 import org.apache.commons.lang3.tuple.*;
@@ -14,31 +19,35 @@ import org.apache.commons.lang3.tuple.*;
  * releasing processes make changes to unrelated parts of a JSONObject, the updates will be
  * marked conflicting. 
  */
-public class ShMemObject extends JSONObject {
+public class ShMemObject extends ObjectNode {
+	
+	private static JsonNodeFactory s_factory;
 	
 	// Points to the parent of this object in the recursive ShMemObject hierarchy. 
 	private ShMemObject parent;
 	
 	// The key the parent uses to refer to this object. We need the key to update timestamp
 	// information in the parent recursively. 
-	private Object parent_key;
+	private String parent_key;
 	
 	// The current value of "time". All puts to an ShMemObject will take this value. The value
 	// is changed whenever we fork. 
-	public static ITimestamp now_;
+	public static ArrayNode m_now;
 	
 	// Index of the current node in the timestamps. 
 	public static int cur_node_;
 	
 	// Initialize an empty ShMemObject. 
 	public ShMemObject() {
-		super();
+		super(JsonNodeFactory.instance);
 		this.parent = null;
 		this.parent_key = "";
 	}
 	
 	// This method is used to parse out an ShMemObject after it has been serialized to
 	// a JSONObject. Used when we transmit diffs to the acquirer. 
+	
+	/*
 	public static ShMemObject json2shmem(JSONObject root) throws ShMemFailure {
 		ShMemObject ret = new ShMemObject();
 		
@@ -73,7 +82,52 @@ public class ShMemObject extends JSONObject {
 		return ret;
 	}
 	
+	*/
 	
+	private static void fixTime(ShMemObject curr, ArrayNode time) {
+		while (curr.parent != null) {
+			String key = curr.parent_key;
+			
+			ObjectNode val = (ObjectNode)curr.parent.get(key);
+			ArrayNode curr_timestamp = (ArrayNode)val.get("shmem_timestamp");
+			Comparison comp = VectorTimestamp.Compare(curr_timestamp,  time);
+			if (comp == Comparison.EQ || comp == Comparison.GT) {
+				VectorTimestamp.Union(curr_timestamp,  time);
+				curr = curr.parent;
+			}
+			else {
+				break;
+			}
+		}
+	}
+	
+	public static ObjectNode get_diff_tree(JsonNode obj, ArrayNode ts) {
+		ObjectNode ret = ShMem.mapper.createObjectNode();
+		Iterator<String> keys = obj.getFieldNames();
+		
+		while (keys.hasNext()) {
+			String cur = keys.next();
+			JsonNode value = obj.get(cur).get("value");
+			ArrayNode cur_time = (ArrayNode)obj.get(cur).get("shmem_timestamp");
+			
+			if (VectorTimestamp.Compare(ts, cur_time) == Comparison.LT) {
+				JsonNode value_tree;
+				if (value.isObject()) {
+					value_tree = get_diff_tree(value, ts);
+				}
+				else {
+					value_tree = value;
+				}
+				ObjectNode temp = ShMem.mapper.createObjectNode();
+				temp.put("shmem_timestamp", cur_time);
+				temp.put("value", value_tree);
+				ret.put(cur, temp);
+			}
+		}
+		return ret;
+	}
+	
+	/*
 	//
 	// Recursively select the timestamps from the object for merging.
 	//
@@ -114,7 +168,8 @@ public class ShMemObject extends JSONObject {
 		}
 		return ret;
 	}
-	
+	*/
+	/*
 	public ITimestamp MergeTime() throws ShMemFailure {
 		ITimestamp ret = now_.Copy();
 		for (Object k : this.keySet()) {
@@ -123,7 +178,135 @@ public class ShMemObject extends JSONObject {
 		}
 		return ret;
 	}
+	*/
 	
+	public ArrayNode getTime() {
+		ArrayNode max = VectorTimestamp.s_default;
+		Iterator<JsonNode> nodes = super.getElements();
+		
+		while (nodes.hasNext()) {
+			ObjectNode node_as_obj = (ObjectNode)nodes.next();
+			ArrayNode cur_ts = (ArrayNode)node_as_obj.get("shmem_timestamp");
+			if (VectorTimestamp.Compare(cur_ts, max) == Comparison.GT) {
+				max = cur_ts;
+			}
+		}
+		return max;
+	}
+	
+	@Override
+	public void put(String fieldname, BigDecimal v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	@Override
+	public void put(String fieldname, boolean v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	@Override
+	public void put(String fieldname, byte[] v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	@Override
+	public void put(String fieldname, double v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	@Override
+	public void put(String fieldname, float v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	@Override
+	public void put(String fieldname, int v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	@Override
+	public JsonNode put(String fieldname, JsonNode v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+		return null;
+	}
+	
+	@Override
+	public void put(String fieldname, long v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	@Override
+	public void put(String fieldname, String v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
+		super.put(fieldname, to_add);
+		fixTime(this, m_now);
+	}
+	
+	public void put(String fieldname, ShMemObject v) {
+		ObjectNode to_add = ShMem.mapper.createObjectNode();
+		to_add.put("value", v);
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(v.getTimestamp()));
+		super.put(fieldname,  to_add);
+		v.parent = this;
+		v.parent_key = fieldname;
+		fixTime(this, v.getTimestamp());
+	}
+	
+	public ArrayNode getTimestamp() {
+		return (ArrayNode)super.get("shmem_timestamp");
+	}
+	
+	@Override
+	public JsonNode get(String fieldname) {
+		return super.get(fieldname).get("value");
+	}
+	
+	@Override
+	public JsonNode remove(String fieldname) {
+		ObjectNode value = (ObjectNode)super.get(fieldname);
+		JsonNode ret = value.remove("value");
+		fixTime(this, m_now);
+		return ret;
+	}
+	
+	
+	
+	
+	/*
 	private Object insert(String key, Object value, ITimestamp ts) throws ShMemFailure {
 		
 		// We wrap the value in the "to_add" JSONObject.
@@ -160,47 +343,8 @@ public class ShMemObject extends JSONObject {
 		return ret;
 	}
 	
-	// This method interposes on JSONObject's put method. 
-	// Records the diff to send to the joiner. 
-	//
-	// Invariant: If we're "PUT"-ting an ShMemObject, then the difflist
-	//			  in the entire tree is *empty*. 
-	//
-	public Object put(Object key, Object value){
-		
-		// We wrap the value in the "to_add" JSONObject.
-		JSONObject to_add = new JSONObject();
-		
-		// Add the timestamp to the wrapper. 
-		to_add.put("shmem_timestamp",  now_);
-		
-		// If the value is an ShMemObject class, update its parent and parent_key information.
-		// The parent is the current object (this) and the key is the 'key' argument. 
-		if (value.getClass() == ShMemObject.class) {
-			ShMemObject sh_mem_value = (ShMemObject)value;
-			sh_mem_value.parent = this;
-			sh_mem_value.parent_key = key;
-		}
-		
-		// Recursively update this ShMemObject's parents' timestamps. 
-		update_difftree(this, now_);
-		
-		// Finally, put the actual value into the wrapper and insert the wrapper into
-		// 'this'. 
-		to_add.put("value", value);
-		return super.put(key, to_add);
-	}
+	*/
 	
-	// 
-	// We need a new "get" method because values are wrapped inside a timestamped JSONObject. 
-	// We remove the raw value from its wrapper and return the raw value. 
-	// 
-	@Override
-	public Object get(Object key)  {
-		
-		JSONObject wrapper = (JSONObject)super.get(key);
-		return wrapper.get("value");
-	}
 	
 	// 
 	// We can't just remove a key from the map because the remove is still an UPDATE. 
@@ -208,7 +352,8 @@ public class ShMemObject extends JSONObject {
 	// process appropriately. Merge understands when to garbage collect tombstones. 
 	//
 	// XXX: This method looks buggy!
-	@Override
+	
+	/*
 	public Object remove(Object key) {
 		Object ret = super.remove(key);
 		
@@ -218,37 +363,10 @@ public class ShMemObject extends JSONObject {
 		to_add.put("shmem_timestamp",  now_);
 		return ret;
 	}
+	*/
 	
-	// Returns the timestamped wrapper. 
-	private Object get_wrapper(Object key) {
-		return super.get(key);
-	}
+	/*
 	
-	// Recursively update the given ShMemObject's (cur) ancestor's timestamps
-	// to reflect a new update. 
-	private static void update_difftree(ShMemObject cur, ITimestamp ts) {
-		while (cur.parent != null) {
-			Object key = cur.parent_key;
-			
-			// Get cur's wrapper in its parent. 
-			JSONObject val = (JSONObject)cur.parent.get_wrapper(key);
-			ITimestamp cur_timestamp = (ITimestamp)val.get("shmem_timestamp");
-			
-			// First check if we really need to update the timestamp.
-			// Invariant: The ancestor's timestamp >= current timestamp, 
-			// if it's already equal, then we don't care. 
-			if (cur_timestamp.Compare(ts) != Comparison.GE) {
-				cur_timestamp.Union(ts);
-				cur = cur.parent;
-			}
-			
-			// We don't have to do anything in this case, the ancestors will already
-			// contain the required timestamp. 
-			else {
-				break;
-			}
-		}
-	}
 	
 	private void put_force(ShMemObject other) throws ShMemFailure {
 		for (Object k : other.keySet()) {
@@ -274,12 +392,78 @@ public class ShMemObject extends JSONObject {
 			}
 		}
 	}
+	*/
+	
+	private static ShMemObject DeserializeObjectNode(ObjectNode obj) {
+		ShMemObject ret = new ShMemObject();
+		Iterator<Map.Entry<String,JsonNode>> fields = obj.getFields();
+		
+		while (fields.hasNext()) {
+			Map.Entry<String, JsonNode> cur = fields.next();
+			String cur_key = cur.getKey();
+			JsonNode value = cur.getValue();
+			
+			if (value.isObject()) {
+				ret.put(cur_key,  DeserializeObjectNode((ObjectNode)value));
+			}
+			else {
+				ret.put(cur_key,  value);
+			}
+		}
+		return ret;
+	}
+	
+	public void merge(JsonNode release, ArrayNode orig_timestamp) {
+		Iterator<Map.Entry<String,JsonNode>> fields = release.getFields();
+		
+		while (fields.hasNext()) {
+			Map.Entry<String, JsonNode> cur = fields.next();
+			String key = cur.getKey();
+			JsonNode other_value = cur.getValue();
+			ArrayNode other_timestamp = (ArrayNode)release.get("shmem_timestamp");
+			if (super.has(cur.getKey())) {
+				// We need to compare timestamps, so use ObjectNode's get. 
+				JsonNode my_value = super.get(key);	
+				ArrayNode my_timestamp = (ArrayNode)my_value.get("shmem_timestamp");
+				
+				Comparison comp = VectorTimestamp.Compare(my_timestamp,  other_timestamp);
+				
+				// Both have written to the same node.
+				if (comp == Comparison.NONE) {
+					if (other_value.isObject() && my_value.isObject()) {
+						((ShMemObject)my_value).merge(other_value,  other_timestamp);
+					}
+					else {
+						// We've just detected a write-write conflict. 
+					}
+				}
+				else if (comp == Comparison.LT) {
+					// Take the other guy's changes because we're subsumed. 
+					if (other_value.isObject()) {
+						ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);
+						this.put(key,  deserialized_value);
+					}
+					else {
+						this.put(key,  other_value);
+					}
+					
+				}
+				else {
+					// Two cases: Either we are greater, in which case we can keep our changes. 
+					// or we're equal, in which case it's also safe to keep our changes. 
+					continue;
+				}
+			}
+		}
+	}
+				
 	
 	//
 	// This method takes the serialized "release" deltas and merges them into the acquirer's 
 	// ShMemObject. orig_timestamp is the timestamp at which the acquirer forked the releasing
 	// process. 
 	//
+	/*
 	public void merge(JSONObject release, ITimestamp orig_timestamp) 
 		throws ShMemFailure {
 		
@@ -386,4 +570,5 @@ public class ShMemObject extends JSONObject {
 			}
 		}
 	}
+	*/
 }
