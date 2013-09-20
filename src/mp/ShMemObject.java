@@ -188,8 +188,6 @@ public class ShMemObject extends ObjectNode {
 	
 	public ArrayNode getTime() {
 		ArrayNode max = VectorTimestamp.s_zero;
-
-		
 		Iterator<Map.Entry<String,JsonNode>> fields = super.getFields();
 		
 		while (fields.hasNext()) {
@@ -199,7 +197,16 @@ public class ShMemObject extends ObjectNode {
 				max = cur_ts;
 			}
 		}
-		return max;
+		
+		// If the timestamp is zero then it means that this ShMemNode doesn't
+		// yet have any fields. 
+		if (max.equals(VectorTimestamp.s_zero)) {
+			return m_now;
+		}
+		else {
+			return max;
+		}
+		
 	}
 	
 	@Override
@@ -287,7 +294,7 @@ public class ShMemObject extends ObjectNode {
 	public void put(String fieldname, ShMemObject v) {
 		ObjectNode to_add = ShMem.mapper.createObjectNode();
 		to_add.put("value", v);
-		to_add.put("shmem_timestamp", VectorTimestamp.Copy(v.getTime()));
+		to_add.put("shmem_timestamp", VectorTimestamp.Copy(m_now));
 		super.put(fieldname,  to_add);
 		v.parent = this;
 		v.parent_key = fieldname;
@@ -469,7 +476,7 @@ public class ShMemObject extends ObjectNode {
 						ObjectNode to_put = ShMem.mapper.createObjectNode();
 						to_put.put("value", deserialized_value);
 						to_put.put("shmem_timestamp",  other_timestamp);
-						this.InsertAt(key, deserialized_value, other_timestamp);
+						this.InsertAt(key, to_put, other_timestamp);
 					}
 					else {
 						this.InsertAt(key,  wrapped_value,  other_timestamp);
@@ -489,7 +496,7 @@ public class ShMemObject extends ObjectNode {
 					ObjectNode to_put = ShMem.mapper.createObjectNode();
 					to_put.put("value",  deserialized_value);
 					to_put.put("shmem_timestamp",  other_timestamp);
-					this.InsertAt(key, deserialized_value, other_timestamp);
+					this.InsertAt(key, to_put, other_timestamp);
 				}
 				else {
 					this.InsertAt(key,  wrapped_value, other_timestamp);
