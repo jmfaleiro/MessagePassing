@@ -454,11 +454,12 @@ public class ShMemObject extends ObjectNode {
 			ArrayNode other_timestamp = (ArrayNode)wrapped_value.get("shmem_timestamp");
 			JsonNode other_value = wrapped_value.get("value");
 			
-			JsonNode my_value = super.get(key);
-			if (my_value != null) {
+			JsonNode my_wrapper_value = super.get(key);
+			if (my_wrapper_value != null) {
 				
 				// We need to compare timestamps, so use ObjectNode's get. 
-				ArrayNode my_timestamp = (ArrayNode)my_value.get("shmem_timestamp");
+				ArrayNode my_timestamp = (ArrayNode)my_wrapper_value.get("shmem_timestamp");
+				JsonNode my_value = my_wrapper_value.get("value");
 				
 				Comparison comp = VectorTimestamp.Compare(my_timestamp,  other_timestamp);
 				
