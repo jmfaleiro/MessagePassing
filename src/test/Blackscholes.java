@@ -173,15 +173,11 @@ public class Blackscholes {
 			
 			ShMemObject result_objs = (ShMemObject)ShMem.state_.get("results");
 			for (int i = 0; i < numOptions; ++i) {
-				
-				try {
-					Object blah = result_objs.get(Integer.toString(i));
-					assert blah != null;
-					results[i] = (Double)blah;
+				if (i == numOptions - 1) {
+					System.out.println("done!");
 				}
-				catch(Exception e) {
-					System.exit(-1);
-				}
+				double value = result_objs.get(Integer.toString(i)).getDoubleValue();
+				results[i] = value;
 			}
 		}
 		else {

@@ -83,8 +83,6 @@ public class ShMemAcquirer implements Runnable {
 				}
 			}
 		}
-		
-		
 	}
 	
 	@SuppressWarnings("unchecked")
