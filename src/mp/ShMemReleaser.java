@@ -58,20 +58,25 @@ public class ShMemReleaser {
 	private class SendThread implements Runnable {
 		
 		// State required to hold released state in a thread-safe manner. 
-		private Lock queue_lock_;
-		private Condition queue_condition_;
-		private Queue<Pair<Integer, String>> send_queue_;
-
-		//private Map<Integer, Socket> conx_;					// Connection to talk to the acquring process.
-		//private Map<Integer, BufferedReader> in_ = null;	// Reader to parse input from the acquiring proc.
-		//private Map<Integer, PrintWriter> out_ = null;		// Writer to send data to the acquiring proc. 
+		private Lock m_queue_lock;
+		private Condition m_queue_condition;
+		private Queue<Pair<Integer, String>> m_send_queue;
+		
+		// State required for persistent connections with acquire servers. 
+		private Map<Integer, Socket> m_conx;					// Connection to talk to the acquring process.
+		private Map<Integer, BufferedReader> m_in = null;	// Reader to parse input from the acquiring proc.
+		private Map<Integer, PrintWriter> m_out = null;		// Writer to send data to the acquiring proc. 
 		
 		public SendThread(Lock queue_lock, 
 						  Condition queue_condition, 
 						  Queue<Pair<Integer, String>> send_queue) {
-			queue_lock_ = queue_lock;
-			queue_condition_ = queue_condition;
-			send_queue_ = send_queue;
+			m_queue_lock = queue_lock;
+			m_queue_condition = queue_condition;
+			m_send_queue = send_queue;
+			
+			m_conx = new HashMap<Integer, Socket>();
+			m_in = new HashMap<Integer, BufferedReader>();
+			m_out = new HashMap<Integer, PrintWriter>();
 			
 			InitConnections();
 		}
@@ -113,36 +118,42 @@ public class ShMemReleaser {
 			*/
 		}
 		
-		private void Send(Pair<Integer, String> release_state) {
+		// Open a persistent connection to the acquirer's server.
+		private void InitConnection(int acquirer) {
 			
-			Pair<String, Integer> address_port = ShMem.addresses.get(release_state.getLeft());
-			Socket conx;
-			PrintWriter out;
-			
-			while (true) {
+			if (!m_conx.containsKey(acquirer)) {
+				Pair<String, Integer> address_port = ShMem.addresses.get(acquirer);
 				
-				try {
-					conx = new Socket(address_port.getKey(), address_port.getRight());
-					out = new PrintWriter(conx.getOutputStream(), true);
-					break;
+				Socket conx = null;
+				PrintWriter out = null;
+				
+				while (true) {
+					try {
+						conx = new Socket(address_port.getKey(), address_port.getRight());
+						out = new PrintWriter(conx.getOutputStream(), true);
+						break;
+					}
+					catch (Exception e) {
+						System.out.println("Connection failed!");
+					}
 				}
-				catch(Exception e) {
-					System.out.println("Connection failed!");
-				}
+				
+				m_conx.put(acquirer,  conx);
+				m_out.put(acquirer,  out);
 			}
+			
+		}
+		
+		private void Send(Pair<Integer, String> release_state) {
+			InitConnection(release_state.getKey());
+			Pair<String, Integer> address_port = ShMem.addresses.get(release_state.getLeft());
+			PrintWriter out = m_out.get(release_state.getKey());
 			
 			ObjectNode to_send = ShMem.mapper.createObjectNode();
 			to_send.put("releaser", me_);
 			to_send.put("argument",  release_state.getRight());
 			out.println(to_send.toString());
-			
-			out.close();
-			try {
-				conx.close();
-			}
-			catch(IOException e) {
-				System.out.println("Couldn't close connection");
-			}
+			out.flush();
 		}
 		
 		public void run() {
@@ -152,25 +163,25 @@ public class ShMemReleaser {
 				
 				// Lock the send_queue_. There may be a concurrent
 				// send request. 
-				queue_lock_.lock();
+				m_queue_lock.lock();
 				try {
 					
 					// If the queue is empty, sleep. 
-					while(send_queue_.size() == 0) {
-						queue_condition_.await();
+					while(m_send_queue.size() == 0) {
+						m_queue_condition.await();
 					}
 				}
 				
 				// We should never have to handle any exception here. 
 				catch (Exception e) {
-					queue_lock_.unlock();
+					m_queue_lock.unlock();
 					e.printStackTrace();
 					System.exit(-1);
 				}
 				
 				// Dequeue the head of the queue. 
-				Pair<Integer, String> to_send = send_queue_.poll();
-				queue_lock_.unlock();
+				Pair<Integer, String> to_send = m_send_queue.poll();
+				m_queue_lock.unlock();
 				
 				// The queue should not have been empty. 
 				assert(to_send != null);
