@@ -6,8 +6,6 @@ import java.io.*;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
-import org.json.simple.*;
-import org.json.simple.parser.*;
 
 import mp.*;
 
@@ -161,7 +159,7 @@ public class Blackscholes {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void runParallel(String input_file, int node_id, int total_nodes) throws InterruptedException, ParseException, ShMemFailure {
+	public static void runParallel(String input_file, int node_id, int total_nodes) throws InterruptedException, ShMemFailure {
 		if (node_id == 0) {
 			
 			parse_options(ShMem.state_, input_file);
@@ -215,12 +213,9 @@ public class Blackscholes {
 			double price = Blackscholes.BlkSchlsEqEuroNoDiv(s, strike,
 											   				r, v, t, otype,
 											   				0);
-			try {
-				results.put(Long.toString(i),  price);
-			}
-			catch(Exception e) {
-				System.exit(-1);
-			}
+			
+			String to_put = Integer.toString(i_usable);
+			results.put(to_put,  price);
 		}
 	}
 	
@@ -278,7 +273,7 @@ public class Blackscholes {
 		
 	}
 	
-	public static void main(String[] args) throws InterruptedException, ShMemFailure, ParseException {
+	public static void main(String[] args) throws InterruptedException, ShMemFailure {
 		
 	    nThreads = Integer.parseInt(args[0]); 
 	    numOptions = Integer.parseInt(args[1]);

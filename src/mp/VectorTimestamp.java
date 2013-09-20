@@ -3,6 +3,7 @@ package mp;
 import mp.ITimestamp.Comparison;
 
 import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.IntNode;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -37,7 +38,8 @@ public class VectorTimestamp {
 	
 	public static void CopyFromTo(ArrayNode from, ArrayNode to) {
 		for (int i = 0; i < s_vector_size; ++i) {
-			to.insert(i, from.get(i).getIntValue());
+			IntNode new_value = IntNode.valueOf(from.get(i).getIntValue());
+			to.set(i,  new_value);
 		}
 	}
 	
@@ -55,10 +57,12 @@ public class VectorTimestamp {
 			int result_value = result.get(i).getIntValue();
 			int with_value = with.get(i).getIntValue();
 			
-			result.insert(i, result_value > with_value?result_value : with_value);
+			IntNode to_put = IntNode.valueOf(result_value > with_value?result_value : with_value);
+			result.set(i, to_put);
 		}
 	}
 	
+	/*
 	public static void MergeTime(ArrayNode vector1, ArrayNode vector2) {
 		for (int i = 0; i < s_vector_size; ++i) {
 			int value1 = vector1.get(i).getIntValue();
@@ -66,9 +70,11 @@ public class VectorTimestamp {
 			vector1.insert(i,  value1 > value2? value1 : value2);
 		}
 	}
+	*/
 	
 	public static void IncrementLocal(ArrayNode vector) {
-		vector.insert(s_local_index,  vector.get(s_local_index).getIntValue()+1);
+		IntNode local_value = IntNode.valueOf(vector.get(s_local_index).getIntValue()+1);
+		vector.set(s_local_index,  local_value);
 	}
 	
 	public static Comparison Compare(ArrayNode vector1, ArrayNode vector2) {

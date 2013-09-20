@@ -84,16 +84,15 @@ public class ShMemObject extends ObjectNode {
 	
 	*/
 	
-	private static void fixTime(ShMemObject curr, ArrayNode time) {
-		while (curr.parent != null) {
-			String key = curr.parent_key;
-			
-			ObjectNode val = (ObjectNode)curr.parent.get(key);
+	private static void fixTime(ShMemObject cur, ArrayNode time) {
+		while (cur.parent != null) {
+			String key = cur.parent_key;
+			ObjectNode val = (ObjectNode)cur.parent.getWrapper(key);
 			ArrayNode curr_timestamp = (ArrayNode)val.get("shmem_timestamp");
 			Comparison comp = VectorTimestamp.Compare(curr_timestamp,  time);
-			if (comp == Comparison.EQ || comp == Comparison.GT) {
+			if (comp == Comparison.LT) {
 				VectorTimestamp.Union(curr_timestamp,  time);
-				curr = curr.parent;
+				cur = cur.parent;
 			}
 			else {
 				break;
@@ -185,6 +184,10 @@ public class ShMemObject extends ObjectNode {
 		return ret;
 	}
 	*/
+	
+	private ObjectNode getWrapper(String key) {
+		return (ObjectNode)super.get(key);
+	}
 	
 	public ArrayNode getTime() {
 		ArrayNode max = VectorTimestamp.s_zero;
@@ -307,7 +310,8 @@ public class ShMemObject extends ObjectNode {
 	
 	@Override
 	public JsonNode get(String fieldname) {
-		return super.get(fieldname).get("value");
+		JsonNode ret = super.get(fieldname).get("value");
+		return ret;
 	}
 	
 	@Override

@@ -81,7 +81,8 @@ public class ShMem {
 		// - Update last_sync_.
 		ObjectNode delta = deltas_.Pop(from);
 		state_.merge(delta, since);
-		VectorTimestamp.CopyFromTo(state_.getTime(), ShMemObject.m_now);
+		VectorTimestamp.Union(ShMemObject.m_now,  state_.getTime());
+
 		m_last_sync.put(from,  VectorTimestamp.Copy(ShMemObject.m_now));
 		VectorTimestamp.IncrementLocal(ShMemObject.m_now);
 	}
