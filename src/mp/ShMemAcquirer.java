@@ -65,20 +65,22 @@ public class ShMemAcquirer implements Runnable {
 				e.printStackTrace(System.err);
 				System.exit(-1);
 			}
+			m_mapper = new ObjectMapper();
 		}
 		
 		public void run() {
 			while (true) {
 				ObjectNode received_delta = null;
 				try {
-					received_delta = m_mapper.readValue(m_in,  ObjectNode.class);
+					String temp = m_in.readLine();
+					received_delta = m_mapper.readValue(temp,  ObjectNode.class);
+					received_state_.Push(received_delta.get("releaser").getIntValue(),
+							 (ObjectNode)m_mapper.readValue(received_delta.get("argument").getTextValue(), ObjectNode.class));
 				} 
 				catch (Exception e) {
 					e.printStackTrace(System.err);
 					System.exit(-1);
 				}
-				received_state_.Push(received_delta.get("releaser").getIntValue(),
-									 (ObjectNode)received_delta.get("argument"));
 			}
 		}
 		

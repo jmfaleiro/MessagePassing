@@ -400,20 +400,32 @@ public class ShMemObject extends ObjectNode {
 	}
 	*/
 	
-	private static ShMemObject DeserializeObjectNode(ObjectNode obj) {
+	
+	public void InsertAt(String fieldname, JsonNode node, ArrayNode time) {
+		super.put(fieldname,  node);
+		fixTime(this, time);
+	}
+	
+	private static ShMemObject DeserializeObjectNode(ObjectNode obj, ShMemObject parent, String parent_key) {
 		ShMemObject ret = new ShMemObject();
+		ret.parent = parent;
+		ret.parent_key = parent_key;
 		Iterator<Map.Entry<String,JsonNode>> fields = obj.getFields();
 		
 		while (fields.hasNext()) {
 			Map.Entry<String, JsonNode> cur = fields.next();
 			String cur_key = cur.getKey();
-			JsonNode value = cur.getValue();
+			JsonNode wrapped_value = cur.getValue();
+			JsonNode real_value = wrapped_value.get("value");
+			ArrayNode timestamp = (ArrayNode)wrapped_value.get("shmem_timestamp");
 			
-			if (value.isObject()) {
-				ret.put(cur_key,  DeserializeObjectNode((ObjectNode)value));
+			if (real_value.isObject()) {
+				ret.InsertAt(cur_key, 
+							 DeserializeObjectNode((ObjectNode)real_value, ret, cur_key), 
+							 (ArrayNode)wrapped_value.get("shmem_timestamp"));
 			}
 			else {
-				ret.put(cur_key,  value);
+				ret.InsertAt(cur_key,  wrapped_value, timestamp);
 			}
 		}
 		return ret;
@@ -425,11 +437,14 @@ public class ShMemObject extends ObjectNode {
 		while (fields.hasNext()) {
 			Map.Entry<String, JsonNode> cur = fields.next();
 			String key = cur.getKey();
-			JsonNode other_value = cur.getValue();
-			ArrayNode other_timestamp = (ArrayNode)release.get("shmem_timestamp");
-			if (super.has(cur.getKey())) {
+			JsonNode wrapped_value = cur.getValue();
+			ArrayNode other_timestamp = (ArrayNode)wrapped_value.get("shmem_timestamp");
+			JsonNode other_value = wrapped_value.get("value");
+			
+			JsonNode my_value = super.get(key);
+			if (my_value != null) {
+				
 				// We need to compare timestamps, so use ObjectNode's get. 
-				JsonNode my_value = super.get(key);	
 				ArrayNode my_timestamp = (ArrayNode)my_value.get("shmem_timestamp");
 				
 				Comparison comp = VectorTimestamp.Compare(my_timestamp,  other_timestamp);
@@ -441,16 +456,21 @@ public class ShMemObject extends ObjectNode {
 					}
 					else {
 						// We've just detected a write-write conflict. 
+						System.out.println("Write-write conflict!");
+						System.exit(-1);
 					}
 				}
 				else if (comp == Comparison.LT) {
 					// Take the other guy's changes because we're subsumed. 
 					if (other_value.isObject()) {
-						ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);
-						this.put(key,  deserialized_value);
+						ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value, this, key);
+						ObjectNode to_put = ShMem.mapper.createObjectNode();
+						to_put.put("value", deserialized_value);
+						to_put.put("shmem_timestamp",  other_timestamp);
+						this.InsertAt(key, deserialized_value, other_timestamp);
 					}
 					else {
-						this.put(key,  other_value);
+						this.InsertAt(key,  other_value,  other_timestamp);
 					}
 					
 				}
@@ -458,6 +478,19 @@ public class ShMemObject extends ObjectNode {
 					// Two cases: Either we are greater, in which case we can keep our changes. 
 					// or we're equal, in which case it's also safe to keep our changes. 
 					continue;
+				}
+			}
+			else {
+				if (other_value.isObject()) {
+					ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value, this, key);
+					
+					ObjectNode to_put = ShMem.mapper.createObjectNode();
+					to_put.put("value",  deserialized_value);
+					to_put.put("shmem_timestamp",  other_timestamp);
+					this.InsertAt(key, deserialized_value, other_timestamp);
+				}
+				else {
+					this.InsertAt(key,  other_value, other_timestamp);
 				}
 			}
 		}
