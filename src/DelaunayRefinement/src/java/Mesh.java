@@ -20,6 +20,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 File: Mesh.java 
+
+Modified by Jose Manuel Faleiro
+faleiro.jose.manuel@gmail.com
 */
 
 package DelaunayRefinement.src.java;
@@ -35,6 +38,8 @@ import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Stack;
 
+import mp.ShMemObject;
+
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
@@ -46,7 +51,7 @@ public class Mesh {
   private final static int num_indices = 100000;
   public final static String[] indices = new String[num_indices]; 
   private int current_index = 0;
-  public final ObjectNode graph = mapper.createObjectNode();
+  public final ShMemObject graph = new ShMemObject();
   //public  final HashMap<String, Element> graph = new HashMap<String, Element>();	
   //protected static final HashMap<Element.Edge, Node<Element>> edge_map = new HashMap<Element.Edge, Node<Element>>();
   protected final LinkedList<Integer> bad_nodes = new LinkedList<Integer>();
@@ -121,7 +126,7 @@ public class Mesh {
     int nels = scanner.nextInt();
     scanner.nextInt();
     scanner.nextInt();
-    ObjectNode[] elements = new ObjectNode[nels];
+    ShMemObject[] elements = new ShMemObject[nels];
     for (int i = 0; i < nels; i++) {
       int index = scanner.nextInt();
       int n1 = scanner.nextInt();
@@ -140,7 +145,7 @@ public class Mesh {
     return unresolved_edges;
   }
 
-  public void tryResolveEdges(ObjectNode elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
+  public void tryResolveEdges(ShMemObject elem, HashMap<Element.Edge, Integer> to_resolve) throws Exception {
 	  
 	  // 1 edge if it's a segment, otherwise 3. 
 	  int n_edges = 2*Element.getDim(elem) - 3;
@@ -153,7 +158,7 @@ public class Mesh {
 			  int neighbor_index = to_resolve.get(edge);
 			  to_resolve.remove(edge);
 			  
-			  ObjectNode neighbor = (ObjectNode)graph.get(indices[neighbor_index]);
+			  ShMemObject neighbor = (ShMemObject)graph.get(indices[neighbor_index]);
 			  
 			  Element.resolveNeighbor(neighbor, elem);
 			  Element.resolveNeighbor(elem,  neighbor);
@@ -176,7 +181,7 @@ public class Mesh {
     scanner.nextInt();
     int nsegs = scanner.nextInt();
     scanner.nextInt();
-    ObjectNode[] segments = new ObjectNode[nsegs];
+    ShMemObject[] segments = new ShMemObject[nsegs];
     
     for (int i = 0; i < nsegs; i++) {
       int index = scanner.nextInt();
@@ -197,18 +202,18 @@ public class Mesh {
   }
   
   public void removeNode(int node) {
-	  ObjectNode to_remove = (ObjectNode)graph.get(indices[node]);
+	  ShMemObject to_remove = (ShMemObject)graph.get(indices[node]);
 	  Element.kill(to_remove);
   }
 
   public boolean containsNode(int node) {
-	  ObjectNode to_check = (ObjectNode)graph.get(indices[node]);
+	  ShMemObject to_check = (ShMemObject)graph.get(indices[node]);
 	  return !Element.isDead(to_check);
   }
   
-  public ObjectNode getNodeData(int node) {
+  public ShMemObject getNodeData(int node) {
 	  
-	  ObjectNode ret = (ObjectNode)graph.get(indices[node]);
+	  ShMemObject ret = (ShMemObject)graph.get(indices[node]);
 	  if (ret == null) {
 		  System.out.println("blah");
 	  }

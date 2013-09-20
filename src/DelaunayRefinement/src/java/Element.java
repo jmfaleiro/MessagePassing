@@ -20,9 +20,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 File: Element.java 
+
+Modified by Jose Manuel Faleiro
+faleiro.jose.manuel@gmail.com
 */
 
 package DelaunayRefinement.src.java;
+
+import mp.ShMemObject;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
@@ -33,7 +38,7 @@ public class Element {
 
   private static final double MINANGLE = 30.0;
 
-  public static boolean isDead(ObjectNode node) {
+  public static boolean isDead(ShMemObject node) {
 	  return node.get("dead").getBooleanValue();
   }
   
@@ -41,8 +46,9 @@ public class Element {
 	  node.put("dead",  true);
   }
 
-  public static ObjectNode CreateElement(JsonNode a, JsonNode b, JsonNode c, Mesh nodes) {
-	  ObjectNode ret = Mesh.mapper.createObjectNode();
+  public static ShMemObject CreateElement(JsonNode a, JsonNode b, JsonNode c, Mesh nodes) {
+	  
+	  ShMemObject ret = new ShMemObject();
 	  
 	  int index = nodes.getNextIndex();
 	  ret.put("index",  index);
@@ -169,7 +175,7 @@ public class Element {
   }
   */
   
-  public static int getObtuseNeighbor(ObjectNode node) throws Exception {
+  public static int getObtuseNeighbor(ShMemObject node) throws Exception {
 	  if (node.get("bObtuse").getBooleanValue()) {
 		  switch (node.get("obtuse").getIntValue()) {
 		  case 0:
@@ -187,7 +193,7 @@ public class Element {
 	  }
   }
   
-  public static int getNeighbor(ObjectNode node, int index) {
+  public static int getNeighbor(ShMemObject node, int index) {
 	  switch (index) {
 	  case 0:
 		  return node.get("n0").getIntValue();
@@ -246,8 +252,8 @@ public class Element {
 	  return JSONTuple.CreateTuple(x, y, z);
   }
   
-  public static ObjectNode CreateElement(JsonNode a, JsonNode b, Mesh nodes) {
-	  ObjectNode ret = Mesh.mapper.createObjectNode();
+  public static ShMemObject CreateElement(JsonNode a, JsonNode b, Mesh nodes) {
+	  ShMemObject ret = new ShMemObject();
 	  
 	  int index = nodes.getNextIndex();
 	  boolean dead = false;
@@ -319,7 +325,7 @@ public class Element {
   }
   */
   
-  public static void resolveNeighbor(ObjectNode node, ObjectNode neighbor) throws Exception {
+  public static void resolveNeighbor(ShMemObject node, ShMemObject neighbor) throws Exception {
 	  int related_index = isRelated(node, neighbor);
 	  int neighbor_index = neighbor.get("index").getIntValue();
 	  if (related_index == -1) {
@@ -341,7 +347,7 @@ public class Element {
 	  }
   }
 
-  public void setNeighbor(ObjectNode node, int index, int value) throws Exception {
+  public void setNeighbor(ShMemObject node, int index, int value) throws Exception {
 	  int dim = node.get("dim").getIntValue();
 	  if (dim == 2) {
 		  if (index == 0) {
@@ -550,7 +556,7 @@ public class Element {
 
   
 
-  public boolean lessThan(JsonNode node, JsonNode e) {
+  public boolean lessThan(ShMemObject node, ShMemObject e) {
 	  int dim = node.get("dim").getIntValue();
 	  int e_dim = e.get("dim").getIntValue();
     if (dim < e_dim) {
@@ -571,7 +577,7 @@ public class Element {
     return false;
   }
   
-  public static int isRelated(ObjectNode node, ObjectNode e) {
+  public static int isRelated(ShMemObject node, ShMemObject e) {
     int edim = e.get("dim").getIntValue();
     int dim = node.get("dim").getIntValue();
     JsonNode my_edge, e_edge0, e_edge1, e_edge2 = null;
@@ -634,12 +640,12 @@ public class Element {
   }
 */
 
-  public static JsonNode center(ObjectNode node) {
+  public static JsonNode center(ShMemObject node) {
 	  return node.get("center");
   }
 
 
-  public static boolean inCircle(ObjectNode node, JsonNode p) {
+  public static boolean inCircle(ShMemObject node, JsonNode p) {
 	  JsonNode center = center(node);
 	  double radius_squared = node.get("radius_squared").getDoubleValue();
 	  double ds = JSONTuple.DistanceSquared(center,  p);
@@ -662,43 +668,43 @@ public class Element {
     return JSONTuple.angle(b, a, c);
   }
 
-  public static int getIndex(ObjectNode node) {
+  public static int getIndex(ShMemObject node) {
 	  return node.get("index").getIntValue();
   }
   
-  public static JsonNode getEdge(ObjectNode node, int i) {
+  public static JsonNode getEdge(ShMemObject node, int i) {
 	  return node.get("edges").get(i);
   }
 
 
-  public static JsonNode getPoint(ObjectNode node, int i) {
+  public static JsonNode getPoint(ShMemObject node, int i) {
 	  return node.get("coords").get(i);
   }
 
   
   // should the node be processed?
-  public static boolean isBad(ObjectNode node) {
+  public static boolean isBad(ShMemObject node) {
 	  return node.get("bBad").getBooleanValue();
   }
 
 
-  public static int getDim(ObjectNode node) {
+  public static int getDim(ShMemObject node) {
 	  return node.get("dim").getIntValue();
   }
 
 
-  public static int numEdges(ObjectNode node) {
+  public static int numEdges(ShMemObject node) {
 	  int dim = getDim(node);
     return dim + dim - 3;
   }
 
 
-  public static boolean isObtuse(ObjectNode node) {
+  public static boolean isObtuse(ShMemObject node) {
 	  return node.get("bObtuse").getBooleanValue();
   }
 
 
-  public JsonNode getRelatedEdge(ObjectNode node, ObjectNode e) {
+  public JsonNode getRelatedEdge(ShMemObject node, ShMemObject e) {
     // Scans all the edges of the two elements and if it finds one that is
     // equal, then sets this as the Edge of the EdgeRelation
     int edim = getDim(e);

@@ -20,6 +20,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 File: Cavity.java 
+
+Modified by Jose Manuel Faleiro
+faleiro.jose.manuel@gmail.com
 */
 
 package DelaunayRefinement.src.java;
@@ -30,6 +33,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import mp.ShMemObject;
+
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;
 
@@ -37,7 +42,7 @@ import org.codehaus.jackson.node.ObjectNode;
 public class Cavity {
   protected JsonNode center;
   protected int centerNode;
-  protected ObjectNode centerElement;
+  protected ShMemObject centerElement;
   protected int dim;
   protected final Queue<Integer> frontier;
   protected final Subgraph pre; // the cavity itself
@@ -103,13 +108,13 @@ public class Cavity {
 
   // find the edge that is opposite the obtuse angle of the element
   private int getOpposite(int node) throws Exception {
-    ObjectNode element = graph.getNodeData(node);
+    ShMemObject element = graph.getNodeData(node);
     return Element.getObtuseNeighbor(element);
   }
 
 
   public boolean isMember(int node) {
-    ObjectNode element = graph.getNodeData(node);
+    ShMemObject element = graph.getNodeData(node);
     return Element.inCircle(element, center);
   }
 
@@ -158,11 +163,11 @@ public class Cavity {
   public void build() throws Exception {
     while (frontier.size() != 0) {
       int curr = frontier.poll();
-      ObjectNode elem = graph.getNodeData(curr);
+      ShMemObject elem = graph.getNodeData(curr);
       int num_neighbors = 2*Element.getDim(elem) - 3;
       for (int i = 0; i < num_neighbors; ++i) {
     	int next = Element.getNeighbor(elem, i);
-	    ObjectNode nextElement = graph.getNodeData(next);
+	    ShMemObject nextElement = graph.getNodeData(next);
         Element.Edge edge = new Element.Edge(Element.getEdge(elem, i));
         // Cavity.EdgeWrapper edge_wrapper = new Cavity.EdgeWrapper(edge, curr, next);
         int next_dim = Element.getDim(nextElement);
@@ -192,7 +197,7 @@ public class Cavity {
   }
 
 
-  public void resolveEdges(ObjectNode elem) throws Exception {
+  public void resolveEdges(ShMemObject elem) throws Exception {
 	  int num = Element.numEdges(elem);
 	  for (int i = 0; i < num; ++i) {
 		  Element.Edge edge = new Element.Edge(Element.getEdge(elem, i));
@@ -200,7 +205,7 @@ public class Cavity {
 			  int neighbor_index = unresolved_edges.get(edge);
 			  unresolved_edges.remove(edge);
 			  
-			  ObjectNode neighbor = graph.getNodeData(neighbor_index);
+			  ShMemObject neighbor = graph.getNodeData(neighbor_index);
 			  Element.resolveNeighbor(neighbor,  elem);
 			  Element.resolveNeighbor(elem,  neighbor);
 		  }
@@ -216,9 +221,9 @@ public class Cavity {
 	  
 	  
     if (Element.getDim(centerElement) == 2) { // we built around a segment
-      ObjectNode ele1 = Element.CreateElement(center, Element.getPoint(centerElement, 0), graph);
+      ShMemObject ele1 = Element.CreateElement(center, Element.getPoint(centerElement, 0), graph);
       post.addNode(Element.getIndex(ele1), graph);
-      ObjectNode ele2 = Element.CreateElement(center, Element.getPoint(centerElement, 1), graph);
+      ShMemObject ele2 = Element.CreateElement(center, Element.getPoint(centerElement, 1), graph);
       post.addNode(Element.getIndex(ele2), graph);
       unresolved_edges.put(new Element.Edge(Element.getEdge(ele1, 0)),  Element.getIndex(ele1));
       unresolved_edges.put(new Element.Edge(Element.getEdge(ele2, 0)),  Element.getIndex(ele2));
@@ -226,7 +231,7 @@ public class Cavity {
     // for (Edge conn : new HashSet<Edge>(connections)) {
     for (Element.Edge edge : connections.keySet()) {
       
-      ObjectNode new_element =  Element.CreateElement(center, edge.getPoint(0), edge.getPoint(1), graph);
+      ShMemObject new_element =  Element.CreateElement(center, edge.getPoint(0), edge.getPoint(1), graph);
       
       unresolved_edges.put(edge, connections.get(edge));
       resolveEdges(new_element);
@@ -274,7 +279,7 @@ public class Cavity {
     }
     
     for (int node : post.getNodes()) {
-    	ObjectNode elem = graph.getNodeData(node);
+    	ShMemObject elem = graph.getNodeData(node);
     	int num_neighbors = 2*Element.getDim(elem) - 3;
     	for (int i = 0; i < num_neighbors; ++i) {
     		if (Element.getNeighbor(elem, i) == -1) {

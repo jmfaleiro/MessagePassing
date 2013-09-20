@@ -20,6 +20,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 File: SerialDelaunayrefinement.java 
+
+Modified by Jose Manuel Faleiro
+faleiro.jose.manuel@gmail.com
 */
 
 package DelaunayRefinement.src.java;
