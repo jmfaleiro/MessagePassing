@@ -187,12 +187,14 @@ public class ShMemObject extends ObjectNode {
 	*/
 	
 	public ArrayNode getTime() {
-		ArrayNode max = VectorTimestamp.s_default;
-		Iterator<JsonNode> nodes = super.getElements();
+		ArrayNode max = VectorTimestamp.s_zero;
+
 		
-		while (nodes.hasNext()) {
-			ObjectNode node_as_obj = (ObjectNode)nodes.next();
-			ArrayNode cur_ts = (ArrayNode)node_as_obj.get("shmem_timestamp");
+		Iterator<Map.Entry<String,JsonNode>> fields = super.getFields();
+		
+		while (fields.hasNext()) {
+			Map.Entry<String, JsonNode> cur = fields.next();
+			ArrayNode cur_ts = (ArrayNode)cur.getValue().get("shmem_timestamp");
 			if (VectorTimestamp.Compare(cur_ts, max) == Comparison.GT) {
 				max = cur_ts;
 			}
@@ -470,7 +472,7 @@ public class ShMemObject extends ObjectNode {
 						this.InsertAt(key, deserialized_value, other_timestamp);
 					}
 					else {
-						this.InsertAt(key,  other_value,  other_timestamp);
+						this.InsertAt(key,  wrapped_value,  other_timestamp);
 					}
 					
 				}
@@ -490,7 +492,7 @@ public class ShMemObject extends ObjectNode {
 					this.InsertAt(key, deserialized_value, other_timestamp);
 				}
 				else {
-					this.InsertAt(key,  other_value, other_timestamp);
+					this.InsertAt(key,  wrapped_value, other_timestamp);
 				}
 			}
 		}
