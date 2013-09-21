@@ -309,7 +309,7 @@ public class ShMemObject extends ObjectNode {
 	}
 	
 	@Override
-	public JsonNode get(String fieldname) {
+	public JsonNode get(String fieldname) throws NullPointerException {
 		JsonNode ret = super.get(fieldname).get("value");
 		return ret;
 	}
@@ -419,10 +419,8 @@ public class ShMemObject extends ObjectNode {
 		fixTime(this, time);
 	}
 	
-	private static ShMemObject DeserializeObjectNode(ObjectNode obj, ShMemObject parent, String parent_key) {
+	private static ShMemObject DeserializeObjectNode(ObjectNode obj) {
 		ShMemObject ret = new ShMemObject();
-		ret.parent = parent;
-		ret.parent_key = parent_key;
 		Iterator<Map.Entry<String,JsonNode>> fields = obj.getFields();
 		
 		while (fields.hasNext()) {
@@ -433,9 +431,13 @@ public class ShMemObject extends ObjectNode {
 			ArrayNode timestamp = (ArrayNode)wrapped_value.get("shmem_timestamp");
 			
 			if (real_value.isObject()) {
+				ShMemObject to_insert = DeserializeObjectNode((ObjectNode)real_value);
 				ret.InsertAt(cur_key, 
-							 DeserializeObjectNode((ObjectNode)real_value, ret, cur_key), 
+							 to_insert, 
 							 (ArrayNode)wrapped_value.get("shmem_timestamp"));
+				to_insert.parent = ret;
+				to_insert.parent_key = cur_key;
+				
 			}
 			else {
 				ret.InsertAt(cur_key,  wrapped_value, timestamp);
@@ -477,11 +479,13 @@ public class ShMemObject extends ObjectNode {
 				else if (comp == Comparison.LT) {
 					// Take the other guy's changes because we're subsumed. 
 					if (other_value.isObject()) {
-						ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value, this, key);
+						ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);
 						ObjectNode to_put = ShMem.mapper.createObjectNode();
 						to_put.put("value", deserialized_value);
 						to_put.put("shmem_timestamp",  other_timestamp);
 						this.InsertAt(key, to_put, other_timestamp);
+						deserialized_value.parent = this;
+						deserialized_value.parent_key = key;
 					}
 					else {
 						this.InsertAt(key,  wrapped_value,  other_timestamp);
@@ -496,12 +500,15 @@ public class ShMemObject extends ObjectNode {
 			}
 			else {
 				if (other_value.isObject()) {
-					ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value, this, key);
+					ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);
 					
 					ObjectNode to_put = ShMem.mapper.createObjectNode();
 					to_put.put("value",  deserialized_value);
 					to_put.put("shmem_timestamp",  other_timestamp);
 					this.InsertAt(key, to_put, other_timestamp);
+					
+					deserialized_value.parent = this;
+					deserialized_value.parent_key = key;
 				}
 				else {
 					this.InsertAt(key,  wrapped_value, other_timestamp);
