@@ -162,8 +162,8 @@ public class Blackscholes {
 	public static void runParallel(String input_file, int node_id, int total_nodes) throws InterruptedException, ShMemFailure {
 		if (node_id == 0) {
 			
-			parse_options(ShMem.state_, input_file);
-			ShMem.state_.put("num_threads",  total_nodes-1);
+			parse_options(ShMem.s_state, input_file);
+			ShMem.s_state.put("num_threads",  total_nodes-1);
 			for (int i = 1; i < total_nodes; ++i) {
 				ShMem.Release(i);
 			}
@@ -171,7 +171,7 @@ public class Blackscholes {
 				ShMem.Acquire(i);
 			}
 			
-			ShMemObject result_objs = (ShMemObject)ShMem.state_.get("results");
+			ShMemObject result_objs = (ShMemObject)ShMem.s_state.get("results");
 			for (int i = 0; i < numOptions; ++i) {
 				if (i == numOptions - 1) {
 					System.out.println("done!");
@@ -188,9 +188,9 @@ public class Blackscholes {
 	}
 	
 	private static void process(int node_number) {
-		ArrayNode data = (ArrayNode)ShMem.state_.get("data");
-		ShMemObject results = (ShMemObject)ShMem.state_.get("results");
-		long num_threads = ShMem.state_.get("num_threads").getLongValue();
+		ArrayNode data = (ArrayNode)ShMem.s_state.get("data");
+		ShMemObject results = (ShMemObject)ShMem.s_state.get("results");
+		long num_threads = ShMem.s_state.get("num_threads").getLongValue();
 		long start = ((long)node_number - 1) * (data.size() / num_threads);
 		long end = start + (data.size()) / num_threads;
 		

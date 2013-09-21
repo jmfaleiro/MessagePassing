@@ -40,7 +40,7 @@ public class ShMem {
 	}
 
 	
-	public  static ShMemObject state_;	// Externally visible state.
+	public  static ShMemObject s_state;	// Externally visible state.
 	private static DeltaStore deltas_;			// Repository of received deltas. 
 	private static ShMemReleaser releaser_; 	// Use to release deltas. 
 	private static ShMemAcquirer acquirer_;
@@ -59,20 +59,24 @@ public class ShMem {
 		for (int i = 0; i < addresses.size(); ++i)
 			m_last_sync.put(i,  VectorTimestamp.CreateZero());
 		
-		ShMemObject.m_now = VectorTimestamp.Copy(VectorTimestamp.s_default); 
+		ShMemObject.m_now = VectorTimestamp.Copy(VectorTimestamp.s_zero); 
 		ShMemObject.cur_node_ = node_id;
 		
-		state_ = new ShMemObject();
+		s_state = new ShMemObject();
 		deltas_ = new DeltaStore();
 		acquirer_ = new ShMemAcquirer(node_id, deltas_);
 		releaser_ = new ShMemReleaser(node_id);
+	}
+	
+	public static void Start() {
+		VectorTimestamp.IncrementLocal(ShMemObject.m_now);
 	}
 	
 	// Called from the application. 
 	// Acquire state from another process. 
 	// XXX: Automatically blocks the calling thread if
 	// the state isn't yet available. 
-	public static void Acquire(int from) throws ShMemFailure {
+	public static void Acquire(int from) {
 		ArrayNode since = m_last_sync.get(from);
 		
 		// - Get the appropriate delta.
@@ -80,8 +84,8 @@ public class ShMem {
 		// - Change now_ appropriately.
 		// - Update last_sync_.
 		ObjectNode delta = deltas_.Pop(from);
-		state_.merge(delta, since);
-		VectorTimestamp.Union(ShMemObject.m_now,  state_.getTime());
+		s_state.merge(delta, since);
+		VectorTimestamp.Union(ShMemObject.m_now,  s_state.getTime());
 
 		m_last_sync.put(from,  VectorTimestamp.Copy(ShMemObject.m_now));
 		VectorTimestamp.IncrementLocal(ShMemObject.m_now);
@@ -98,7 +102,7 @@ public class ShMem {
 		// state since the last time we released to the process we're releasing
 		// to).
 		ObjectNode cur_delta = null;
-		cur_delta = ShMemObject.get_diff_tree(state_, last_sync);
+		cur_delta = ShMemObject.get_diff_tree(s_state, last_sync);
 		assert(cur_delta != null);						// Make sure we have a valid delta. 
 		m_last_sync.put(to,  VectorTimestamp.Copy(ShMemObject.m_now));	// Deep copy timestamp.
 		VectorTimestamp.IncrementLocal(ShMemObject.m_now);								// Increment time.

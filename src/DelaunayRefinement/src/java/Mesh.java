@@ -32,6 +32,7 @@ package DelaunayRefinement.src.java;
 import java.io.FileInputStream;
 import java.util.zip.GZIPInputStream;
 import java.io.FileNotFoundException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -68,6 +69,7 @@ public class Mesh {
   
   @SuppressWarnings("unchecked")
   public LinkedList<Integer> getBad() {
+	  Collections.shuffle(bad_nodes);
     return bad_nodes;
   }
   
