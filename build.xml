@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<project name="Distributaries" default="initialize">
+
+<property name="src.dir" value="src" />
+<property name="build.dir" value="build"/>
+<property name="shmem.dir" value="${src.dir}/mp"/>
+<property name="common.dir" value="${src.dir}/common/util"/>
+<property name="delaunay.dir" value="${src.dir}/DelaunayRefinement/src/java"/>
+<property name="classes.dir" value="${build.dir}/classes"/>
+<property name="jar.dir" value="${build.dir}/jar"/>
+<property name="lib.dir" value="lib"/>
+
+<path id="classpath">
+  <fileset dir="${lib.dir}" includes="**/*.jar"/>
+</path>
+
+<target name="clean">
+  <delete dir="build"/>
+</target>
+
+<target name="compile_common">
+  <mkdir dir="${classes.dir}"/>
+  <javac srcdir="${common.dir}" destdir="${classes.dir}" classpathref="classpath"/>
+</target>
+
+<target name="compile_lib">
+  <mkdir dir="build/classes"/>
+  <javac srcdir="${shmem.dir}" destdir="${classes.dir}" classpathref="classpath"/>
+</target>
+
+<target name="compile_delaunay" depends="compile_lib,compile_common">
+  <mkdir dir="build/classes"/>
+  <javac srcdir="${delaunay.dir}" destdir="${classes.dir}" classpathref="classpath"/>
+</target>
+
+<target name="serial" depends="compile_delaunay">
+  <mkdir dir="${jar.dir}"/>
+  <jar destfile="${jar.dir}/serial.jar" basedir="build/classes">
+    <manifest>
+<attribute name="Main-Class" value="DelaunayRefinement.src.java.SerialDelaunayrefinement"/>
+    </manifest>
+  </jar>
+</target>
+
+<target name="run_serial" depends="serial">
+  <java fork="true" classname="DelaunayRefinement.src.java.SerialDelaunayrefinement">
+    <classpath>
+      <path refid="classpath"/>
+      <path location="${jar.dir}/serial.jar"/>
+    </classpath>
+  </java>
+</target>
+
+<target name="scheduler" depends="compile_delaunay">
+  <mkdir dir="${jar.dir}"/>
+  <jar destfile="${jar.dir}/scheduler.jar" basedir="build/classes">
+  <manifest>
+    <attribute name="Main-Class" value="DelaunayRefinement.src.java.DelaunayScheduler"/>
+  </manifest>
+  </jar>
+</target>
+        
+<target name="worker" depends="compile_delaunay">
+  <mkdir dir="${jar.dir}"/>
+  <jar destfile="${jar.dir}/worker.jar" basedir="build/classes">
+  <manifest>
+    <attribute name="Main-Class" value="DelaunayRefinement.src.java.DelaunayWorker"/>
+  </manifest>
+  </jar>
+</target>
+
+<target name="run_worker" depends="worker">
+  <java fork="true" classname="DelaunayRefinement.src.java.DelaunayWorker">
+    <classpath>
+      <path refid="classpath"/>
+      <path location="${jar.dir}/worker.jar"/>
+    </classpath>
+  </java>
+</target>
+
+</project>
