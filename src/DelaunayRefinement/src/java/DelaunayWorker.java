@@ -55,10 +55,6 @@ public class DelaunayWorker {
 			ShMem.Acquire(m_scheduler_id);
 			ShMemObject my_container = (ShMemObject)ShMem.s_state.get(m_id);
 			
-			// Done with mesh refinement!
-			if (my_container.get("die") != null) {
-				System.exit(0);
-			}
 			try {
 				int to_process = my_container.get("next").getIntValue();
 				

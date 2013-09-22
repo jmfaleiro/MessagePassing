@@ -1,6 +1,7 @@
 package DelaunayRefinement.src.java;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Random;
@@ -15,8 +16,8 @@ import mp.ShMemObject;
 
 public class DelaunayScheduler {
 
-	private final int[] m_worker_ids;
-	private final String[] m_worker_id_strings;
+	
+	private final HashMap<Integer, String> m_workers;
 	private final Mesh m_mesh;
 	private final LinkedList<Integer> m_worklist;
 	private final Random m_genrandom;
@@ -46,35 +47,42 @@ public class DelaunayScheduler {
 	
 	public DelaunayScheduler(int num_workers, Mesh mesh) {
 		
+		m_workers = new HashMap<Integer, String>();
+		
 		// Initialize and populate the arrays corresponding to worker ids
-		m_worker_ids = new int[num_workers]; 
-		m_worker_id_strings = new String[num_workers];
 		for (int i = 0; i < num_workers; ++i) {
-			m_worker_ids[i] = i+1;
-			m_worker_id_strings[i] = Integer.toString(i+1);
+			m_workers.put(i+1,  Integer.toString(i+1));
 		}
 		
 		// Initialize the mesh and worklist of bad nodes. 
 		m_mesh = mesh;
 		m_worklist = mesh.getBad();
-		Collections.shuffle(m_worklist); // permute the list of bad nodes. 
 		m_genrandom = new Random(1234);
+		Collections.shuffle(m_worklist); // permute the list of bad nodes. 
 	}
 	
 	private void getBadNodes(int worker_id) {
 		ShMemObject obj = 
-				(ShMemObject)ShMem.s_state.get(m_worker_id_strings[worker_id]);
+				(ShMemObject)ShMem.s_state.get(m_workers.get(worker_id));
 		
 		Iterator<JsonNode> bad_nodes = 
-				((ArrayNode)obj.get("bad_nodes")).getElements();
+				((ArrayNode)(obj.get("new_bad"))).getElements();
 		
-		int num_worklist = m_worklist.size();
+		
 		
 		while (bad_nodes.hasNext()) {
-			int insert_index = m_genrandom.nextInt() % num_worklist;
-			m_worklist.add(insert_index,  bad_nodes.next().getIntValue());
-			num_worklist += 1;
+			int cur_bad = bad_nodes.next().getIntValue();
+			m_worklist.addLast(cur_bad);
 		}
+		
+		Collections.shuffle(m_worklist, m_genrandom);
+	}
+	
+	private void dispatchWork(int worker_index) {
+		ShMemObject arg = (ShMemObject)ShMem.s_state.get(m_workers.get(worker_index));
+		int next_bad = m_worklist.removeFirst();
+		arg.put("next",  next_bad);
+		ShMem.Release(worker_index);
 	}
 	
 	public void process() {
@@ -85,28 +93,32 @@ public class DelaunayScheduler {
 	    System.gc();
 	    System.gc();
 		
-		for (int worker_id : m_worker_ids) {
+	    for (int worker_id : m_workers.keySet()) {
 			ShMem.Acquire(worker_id);
 		}
-		
-		int last_worker = 0;
-		int num_workers = m_worker_ids.length;
+		int num_workers = m_workers.size();
 		
 		int[] waiting_on = new int[num_workers];
-		boolean[] free_workers = new boolean[num_workers];
+		boolean[] free_workers = new boolean[num_workers+1];
 		
 		int first_free = 0, last_waiter = 0;
 		
 		for (int i = 0; i < num_workers; ++i) {
 			waiting_on[i] = -1;
 			free_workers[i] = true;
+			
+			ShMemObject arg = new ShMemObject();
+			ShMem.s_state.put(m_workers.get(i+1), arg);
 		}
+		free_workers[num_workers] = true;
 		
 		// Start our experiment clock. 
 		
 		long id = Time.getNewTimeId();
 		// Check if the worklist is empty and if all the workers are free. 
 		// If yes, we're done. 
+		
+		int iter = 0;
 		while (!(m_worklist.isEmpty() && last_waiter == first_free)) {
 			
 			// We'll only get out of this loop when there are bad nodes and
@@ -114,26 +126,28 @@ public class DelaunayScheduler {
 			while (m_worklist.isEmpty() || first_free == last_waiter + num_workers) {
 				ShMem.Acquire(waiting_on[last_waiter % num_workers]);
 				getBadNodes(waiting_on[last_waiter % num_workers]);
-				free_workers[waiting_on[last_waiter]] = true;
-				waiting_on[last_waiter] = -1;
-				last_waiter = (last_waiter + 1) % num_workers;
+				free_workers[waiting_on[last_waiter % num_workers]] = true;
+				waiting_on[last_waiter % num_workers] = -1;
+				last_waiter += 1;
 			}
 			
 			// Find the first free worker. Don't use hashset of integers
 			// to keep track of free workers because of GC. 
 			int next;
-			for (next = 0; next < num_workers; ++next) {
+			for (next = 1; next <= num_workers; ++next) {
 				if (free_workers[next]) {
 					free_workers[next] = false;
-					next +=1;
 					break;
 				}
 			}
 			
+			System.out.println(iter);
+			iter += 1;
+			
 			// Release to the next free worker. 
 			waiting_on[first_free % num_workers] = next;
 			first_free = first_free + 1;
-			ShMem.Release(next);
+			dispatchWork(next);
 		}
 		
 		long time = Time.elapsedTime(id);
