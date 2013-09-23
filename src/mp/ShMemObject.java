@@ -83,6 +83,7 @@ public class ShMemObject extends ObjectNode {
 			else {
 				cur.m_prev = null;
 				cur.m_next = m_head;
+				m_head.m_prev = cur;
 				m_head = cur;
 			}
 		}
@@ -96,6 +97,7 @@ public class ShMemObject extends ObjectNode {
 				cur.m_prev = m_tail;
 				m_tail.m_next = cur;
 				cur.m_next = null;
+				m_tail = cur;
 			}
 		}
 		
@@ -106,7 +108,7 @@ public class ShMemObject extends ObjectNode {
 			if (prev != null) {
 				prev.m_next = next;
 			}
-			if (cur != null) {
+			if (next != null) {
 				next.m_prev = prev;
 			}
 			
@@ -823,6 +825,12 @@ public class ShMemObject extends ObjectNode {
 						this.InsertAt(key,  wrapped_value,  other_timestamp);
 					}
 					
+					// We need to create a new list node for this key and append
+					// it to the front. 
+					ListNode new_node = new ListNode(key, other_timestamp);
+					m_sorted_keys.InsertFront(new_node);
+					m_key_map.put(key,  new_node);
+					
 				}
 				else {
 					// Two cases: Either we are greater, in which case we can keep our changes. 
@@ -830,7 +838,7 @@ public class ShMemObject extends ObjectNode {
 					continue;
 				}
 			}
-			else {
+			else {	// This means that we don't contain the key. 
 				if (other_value.isObject()) {
 					ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);
 					
@@ -845,6 +853,12 @@ public class ShMemObject extends ObjectNode {
 				else {
 					this.InsertAt(key,  wrapped_value, other_timestamp);
 				}
+				
+				// We need to create a new list node for this key and append
+				// it to the front. 
+				ListNode new_node = new ListNode(key, other_timestamp);
+				m_sorted_keys.InsertFront(new_node);
+				m_key_map.put(key,  new_node);
 			}
 		}
 	}
