@@ -37,19 +37,16 @@ public class ShMemObject extends ObjectNode {
 	// Index of the current node in the timestamps. 
 	public static int cur_node_;
 	
-	private static int s_first_free = 1;
-	private static ListNode[] s_list_nodes = new ListNode[10000000];
-	
 	// Initialize an empty ShMemObject. 
 	public ShMemObject() {
 		super(JsonNodeFactory.instance);
 		this.parent = null;
 		this.parent_key = "";
-		m_key_map = new HashMap<String, Integer>();
+		m_key_map = new HashMap<String, ListNode>();
 		m_sorted_keys = new InternalLinkedList();
 	}
 	
-	private HashMap<String, Integer> m_key_map;
+	private HashMap<String, ListNode> m_key_map;
 	private InternalLinkedList m_sorted_keys;
 	
 	private class ListNode {
@@ -167,8 +164,7 @@ public class ShMemObject extends ObjectNode {
 			if (comp == Comparison.LT) {
 				VectorTimestamp.Union(curr_timestamp,  time);
 				
-				int node_index = cur.parent.m_key_map.get(cur.parent_key);
-				ListNode cur_node = s_list_nodes[node_index];
+				ListNode cur_node = cur.parent.m_key_map.get(cur.parent_key);
 				cur.parent.m_sorted_keys.Remove(cur_node);
 				cur.parent.m_sorted_keys.InsertFront(cur_node);
 				
@@ -295,37 +291,34 @@ public class ShMemObject extends ObjectNode {
 	@Override
 	public void put(String fieldname, BigDecimal v) {
 		
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		
 		fixTime(this, m_now);
@@ -333,37 +326,34 @@ public class ShMemObject extends ObjectNode {
 	
 	@Override
 	public void put(String fieldname, boolean v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		
 		fixTime(this, m_now);
@@ -371,75 +361,68 @@ public class ShMemObject extends ObjectNode {
 	
 	@Override
 	public void put(String fieldname, byte[] v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
-		
 		fixTime(this, m_now);
 	}
 	
 	@Override
 	public void put(String fieldname, double v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		
 		fixTime(this, m_now);
@@ -447,37 +430,34 @@ public class ShMemObject extends ObjectNode {
 	
 	@Override
 	public void put(String fieldname, float v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		
 		fixTime(this, m_now);
@@ -485,37 +465,34 @@ public class ShMemObject extends ObjectNode {
 	
 	@Override
 	public void put(String fieldname, int v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		
 		fixTime(this, m_now);
@@ -523,154 +500,137 @@ public class ShMemObject extends ObjectNode {
 	
 	@Override
 	public JsonNode put(String fieldname, JsonNode v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
-		
 		fixTime(this, m_now);
 		return null;
 	}
 	
 	@Override
 	public void put(String fieldname, long v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
-		
 		fixTime(this, m_now);
 	}
 	
 	@Override
 	public void put(String fieldname, String v) {
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
-		
 		fixTime(this, m_now);
 	}
 	
 	public void put(String fieldname, ShMemObject v) {
-		
-		int node_index;
+		ListNode cur_node;
 		try {
-			node_index = m_key_map.get(fieldname);
+			cur_node = m_key_map.get(fieldname);
 		}
 		catch (Exception e) {
-			node_index = 0;
+			cur_node = null;
 		}
-		if (node_index == 0) {
+		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			node_index = s_first_free;
-			s_first_free += 1;
 			ArrayNode new_timestamp = VectorTimestamp.Copy(m_now);
-			s_list_nodes[node_index] = new ListNode(fieldname, new_timestamp);
-			m_key_map.put(fieldname,  node_index);
+			cur_node = new ListNode(fieldname, new_timestamp);
+			m_key_map.put(fieldname,  cur_node);
 			
 			ObjectNode to_add = ShMem.mapper.createObjectNode();
 			to_add.put("value",  v);
 			to_add.put("shmem_timestamp",  new_timestamp);
 			super.put(fieldname,  to_add);
 			
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			ObjectNode wrapper_value = (ObjectNode)super.get(fieldname);
 			wrapper_value.put("value",  v);
-			ArrayNode old_timestamp = (ArrayNode)wrapper_value.get("shmem_timestamp");
-			VectorTimestamp.CopyFromTo(m_now, old_timestamp);
+			VectorTimestamp.CopyFromTo(m_now, cur_node.m_timestamp);
 			
-			m_sorted_keys.Remove(s_list_nodes[node_index]);
-			m_sorted_keys.InsertFront(s_list_nodes[node_index]);
+			m_sorted_keys.Remove(cur_node);
+			m_sorted_keys.InsertFront(cur_node);
 		}
-		
 		v.parent = this;
 		v.parent_key = fieldname;
 		fixTime(this, v.getTimestamp());
