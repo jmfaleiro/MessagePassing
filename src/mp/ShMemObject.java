@@ -166,6 +166,12 @@ public class ShMemObject extends ObjectNode {
 			Comparison comp = VectorTimestamp.Compare(curr_timestamp,  time);
 			if (comp == Comparison.LT) {
 				VectorTimestamp.Union(curr_timestamp,  time);
+				
+				int node_index = cur.parent.m_key_map.get(cur.parent_key);
+				ListNode cur_node = s_list_nodes[node_index];
+				cur.parent.m_sorted_keys.Remove(cur_node);
+				cur.parent.m_sorted_keys.InsertFront(cur_node);
+				
 				cur = cur.parent;
 			}
 			else {
