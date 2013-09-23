@@ -38,7 +38,7 @@ public class ShMemObject extends ObjectNode {
 	public static int cur_node_;
 	
 	private static int s_first_free = 1;
-	private static ListNode[] s_list_nodes = new ListNode[1000000];
+	private static ListNode[] s_list_nodes = new ListNode[10000000];
 	
 	// Initialize an empty ShMemObject. 
 	public ShMemObject() {

@@ -97,15 +97,9 @@ public class SerialDelaunayrefinement {
     }
     long id = Time.getNewTimeId();
     
-    int iter = 0;
-    
     while (!worklist.isEmpty()) {
       int bad_element = worklist.removeFirst();
       if (mesh.containsNode(bad_element)) {
-    	  
-    	  if (iter == 17) {
-    		  System.out.println("blah");
-    	  }
     	  
         cavity.initialize(bad_element);
         cavity.build();
@@ -119,10 +113,6 @@ public class SerialDelaunayrefinement {
         for (int bad : cavity.getPost().newBad()) {
         	worklist.addLast(bad);
         }
-        
-        ++iter;
-        System.out.println(iter);
-        
       }
     }
     long time = Time.elapsedTime(id);
