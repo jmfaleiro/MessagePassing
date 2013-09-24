@@ -41,7 +41,7 @@ import org.codehaus.jackson.node.ObjectNode;
 public class Mesh {
 	
   public final static ObjectMapper mapper = new ObjectMapper();
-  private final static int num_indices = 100000;
+  private final static int num_indices = 10000000;
   public final static String[] indices = new String[num_indices]; 
   private int current_index = 0;
   public final ObjectNode graph = mapper.createObjectNode();
