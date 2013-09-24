@@ -11,55 +11,81 @@ public class VectorTimestamp {
 
 	public static int s_vector_size;
 	public static int s_local_index;
-	public static ArrayNode s_default;
-	public static ArrayNode s_zero;
+	public static int[] s_default;
+	public static int[] s_zero;
+	
+	private static int[] s_scratch_space;
 	
 	public static void CreateDefault() {
-		ArrayNode ret = ShMem.mapper.createArrayNode();
+		int[] ret = new int[s_vector_size];
 		for (int i = 0; i < s_vector_size; ++i) {
 			if (i == s_local_index) {
-				ret.add(1);
+				ret[i] = 1;
 			}
 			else {
-				ret.add(0);
+				ret[i] = 0;
 			}
 		}
 		
 		s_default = ret;
 	}
 	
-	public static ArrayNode CreateZero() {
-		ArrayNode ret = ShMem.mapper.createArrayNode();
+	public static int[] CreateZero() {
+		int[] ret = new int[s_vector_size];
 		for (int i = 0; i < s_vector_size; ++i) {
-			ret.add(0);
+			ret[i] = 0;
 		}
 		return ret;
 	}
 	
-	public static void CopyFromTo(ArrayNode from, ArrayNode to) {
+	public static void CopyFromTo(int[] from, int[] to) {
 		for (int i = 0; i < s_vector_size; ++i) {
-			IntNode new_value = IntNode.valueOf(from.get(i).getIntValue());
-			to.set(i,  new_value);
+			to[i] = from[i];
 		}
 	}
 	
-	public static ArrayNode Copy(ArrayNode node) {
+	public static void CopyFromSerializedTo(ArrayNode from, int[] to) {
+		for (int i = 0; i < s_vector_size; ++i) {
+			to[i] = from.get(i).getIntValue();
+		}
+	}
+	
+	public static ArrayNode toArrayNode(int[] vector) {
 		ArrayNode ret = ShMem.mapper.createArrayNode();
 		for (int i = 0; i < s_vector_size; ++i) {
-			ret.add(node.get(i));
+			ret.add(vector[i]);
 		}
 		return ret;
 	}
 	
-	public static void Union(ArrayNode result, ArrayNode with) {
-		int len = result.size();
-		for (int i = 0; i < len; ++i) {
-			int result_value = result.get(i).getIntValue();
-			int with_value = with.get(i).getIntValue();
-			
-			IntNode to_put = IntNode.valueOf(result_value > with_value?result_value : with_value);
-			result.set(i, to_put);
+	
+	public static int[] CopySerialized(ArrayNode node) {
+		int[] ret = new int[s_vector_size];
+		for (int i = 0; i < s_vector_size; ++i) {
+			ret[i] = node.get(i).getIntValue();
 		}
+		return ret;
+	}
+	public static int[] Copy(int[] node) {
+		int[] ret = new int[s_vector_size];
+		for (int i = 0; i < s_vector_size; ++i) {
+			ret[i] = node[i];
+		}
+		return ret;
+	}
+	
+	public static void Union(int[] result, int[] with) {
+		
+		for (int i = 0; i < s_vector_size; ++i) {
+			if (with[i] > result[i]) {
+				result[i] = with[i];
+			}
+		}
+	}
+	
+	public static void UnionWithSerialized(int[] result, ArrayNode with) {
+		to_scratch(with);
+		Union(result, s_scratch_space);
 	}
 	
 	/*
@@ -72,21 +98,30 @@ public class VectorTimestamp {
 	}
 	*/
 	
-	public static void IncrementLocal(ArrayNode vector) {
-		IntNode local_value = IntNode.valueOf(vector.get(s_local_index).getIntValue()+1);
-		vector.set(s_local_index,  local_value);
+	public static void IncrementLocal(int[] vector) {
+		vector[s_local_index] += 1;
 	}
 	
-	public static Comparison Compare(ArrayNode vector1, ArrayNode vector2) {
+	private static void to_scratch(ArrayNode serialized_vector) {
+		for (int i = 0; i < s_vector_size; ++i) {
+			s_scratch_space[i] = serialized_vector.get(i).getIntValue();
+		}
+	}
+	
+	public static Comparison CompareWithSerializedTS(int[] vector,
+													 ArrayNode serialized_vector) {
+		to_scratch(serialized_vector);
+		return Compare(vector, s_scratch_space);
+	}
+	
+	public static Comparison Compare(int[] vector1, int[] vector2) {
 		boolean less_than = false;
 		boolean bigger_than = false;
 		
 		int len = s_vector_size;
 		for (int i = 0; i < len; ++i) {
-			int value1 = vector1.get(i).getIntValue();
-			int value2 = vector2.get(i).getIntValue();
-			bigger_than |= value1 > value2;
-			less_than |= value2 > value1;
+			bigger_than |= vector1[i] > vector2[i];
+			less_than |= vector2[i] > vector1[i];
 		}
 		
 		if (less_than && bigger_than) {
