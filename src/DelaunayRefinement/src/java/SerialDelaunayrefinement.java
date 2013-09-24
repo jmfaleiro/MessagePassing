@@ -115,7 +115,7 @@ public class SerialDelaunayrefinement {
         }
       }
     }
-    long time = Time.elapsedTime(id);
+    long time = Time.elapsedTime(id,  true);
     System.err.println("runtime: " + time + " ms");
 
     /*
