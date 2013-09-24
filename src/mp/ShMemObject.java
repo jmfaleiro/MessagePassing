@@ -278,32 +278,6 @@ public class ShMemObject extends ObjectNode {
 		return (ObjectNode)super.get(key);
 	}
 	
-	/*
-	public ArrayNode getTime() {
-		ArrayNode max = VectorTimestamp.s_zero;
-		Iterator<Map.Entry<String,JsonNode>> fields = super.getFields();
-		
-		while (fields.hasNext()) {
-			Map.Entry<String, JsonNode> cur = fields.next();
-			ArrayNode cur_ts = (ArrayNode)cur.getValue().get("shmem_timestamp");
-			if (VectorTimestamp.Compare(cur_ts, max) == Comparison.GT) {
-				max = cur_ts;
-			}
-		}
-		
-		// If the timestamp is zero then it means that this ShMemNode doesn't
-		// yet have any fields. 
-		if (max.equals(VectorTimestamp.s_zero)) {
-			return s_now;
-		}
-		else {
-			return max;
-		}
-		
-	}
-	*/
-	
-	
 	private void put_common(String fieldname) {
 		ListNode cur_node;
 		try {
@@ -402,19 +376,13 @@ public class ShMemObject extends ObjectNode {
 		fixTime(this, s_now);
 	}
 	
-	public ArrayNode getTimestamp() {
-		return (ArrayNode)super.get("shmem_timestamp");
-	}
-	
-	// XXX: We need to fix this method.
 	@Override
 	public JsonNode remove(String fieldname) {
-		ObjectNode value = (ObjectNode)super.get(fieldname);
-		JsonNode ret = value.remove("value");
+		put_common(fieldname);
+		JsonNode ret = super.remove(fieldname);
 		fixTime(this, s_now);
 		return ret;
 	}
-	
 	
 	/*
 	private Object insert(String key, Object value, ITimestamp ts) throws ShMemFailure {
@@ -505,6 +473,7 @@ public class ShMemObject extends ObjectNode {
 	*/
 	
 	public void InsertAt(String fieldname, JsonNode node, int[] time) {
+		VectorTimestamp.Union(s_now,  time);
 		super.put(fieldname,  node);
 		fixTime(this, time);
 	}
