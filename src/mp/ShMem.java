@@ -47,29 +47,30 @@ public class ShMem {
 	
 	// We need to keep the last time we released to extract the appropriate
 	// deltas from state_ while releasing. 
-	private static Map<Integer, ArrayNode> m_last_sync;  
+	private static Map<Integer, int[]> m_last_sync;  
 	
 	public static void Init(int node_id) {
 		VectorTimestamp.s_local_index = node_id;
 		VectorTimestamp.s_vector_size = addresses.size();
 		VectorTimestamp.CreateDefault();
 		VectorTimestamp.s_zero = VectorTimestamp.CreateZero();
-		m_last_sync = new HashMap<Integer, ArrayNode>();
+		m_last_sync = new HashMap<Integer, int[]>();
 		
 		for (int i = 0; i < addresses.size(); ++i)
 			m_last_sync.put(i,  VectorTimestamp.CreateZero());
 		
-		ShMemObject.m_now = VectorTimestamp.Copy(VectorTimestamp.s_zero); 
+		ShMemObject.s_now = VectorTimestamp.Copy(VectorTimestamp.s_zero); 
 		ShMemObject.cur_node_ = node_id;
 		
 		s_state = new ShMemObject();
+		
 		deltas_ = new DeltaStore();
 		acquirer_ = new ShMemAcquirer(node_id, deltas_);
 		releaser_ = new ShMemReleaser(node_id);
 	}
 	
 	public static void Start() {
-		VectorTimestamp.IncrementLocal(ShMemObject.m_now);
+		VectorTimestamp.IncrementLocal(ShMemObject.s_now);
 	}
 	
 	// Called from the application. 
@@ -77,7 +78,7 @@ public class ShMem {
 	// XXX: Automatically blocks the calling thread if
 	// the state isn't yet available. 
 	public static void Acquire(int from) {
-		ArrayNode since = m_last_sync.get(from);
+		int[] since = m_last_sync.get(from);
 		
 		// - Get the appropriate delta.
 		// - Merge it into state_. 
@@ -85,10 +86,8 @@ public class ShMem {
 		// - Update last_sync_.
 		ObjectNode delta = deltas_.Pop(from);
 		s_state.merge(delta, since);
-		VectorTimestamp.Union(ShMemObject.m_now,  s_state.getTime());
-
-		m_last_sync.put(from,  VectorTimestamp.Copy(ShMemObject.m_now));
-		VectorTimestamp.IncrementLocal(ShMemObject.m_now);
+		m_last_sync.put(from,  VectorTimestamp.Copy(ShMemObject.s_now));
+		VectorTimestamp.IncrementLocal(ShMemObject.s_now);
 	}
 	
 	// Called from the application. Release state to another process. 
@@ -96,7 +95,7 @@ public class ShMem {
 	public static void Release(int to) {
 		
 		// Get the timestamp of the last release. 
-		ArrayNode last_sync = m_last_sync.get(to);
+		int[] last_sync = m_last_sync.get(to);
 		
 		// Extract the appropriate delta from state_ (all modifications to
 		// state since the last time we released to the process we're releasing
@@ -104,8 +103,8 @@ public class ShMem {
 		ObjectNode cur_delta = null;
 		cur_delta = ShMemObject.get_diff_tree(s_state, last_sync);
 		assert(cur_delta != null);						// Make sure we have a valid delta. 
-		m_last_sync.put(to,  VectorTimestamp.Copy(ShMemObject.m_now));	// Deep copy timestamp.
-		VectorTimestamp.IncrementLocal(ShMemObject.m_now);								// Increment time.
+		m_last_sync.put(to,  VectorTimestamp.Copy(ShMemObject.s_now));	// Deep copy timestamp.
+		VectorTimestamp.IncrementLocal(ShMemObject.s_now);								// Increment time.
 		releaser_.Release(to,  cur_delta);				// Release (asynchronously). 
 	}
 

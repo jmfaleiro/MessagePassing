@@ -282,6 +282,7 @@ public class Blackscholes {
 	    Blackscholes.results = new double[numOptions];
 	    
 	    ShMem.Init(node_id);
+	    ShMem.Start();
 	    runParallel(input_file, node_id, nThreads);
 	    
 	    if (node_id == 0) {
