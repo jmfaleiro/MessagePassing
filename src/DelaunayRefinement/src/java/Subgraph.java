@@ -32,7 +32,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import mp.ShMemObject;
+import mp.java.*;
 
 import org.codehaus.jackson.node.ObjectNode;
 

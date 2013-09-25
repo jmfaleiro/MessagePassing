@@ -1,4 +1,4 @@
-package mp;
+package mp.java;
 
 import java.util.*;
 import java.net.*;

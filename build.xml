@@ -3,7 +3,7 @@
 
 <property name="src.dir" value="src" />
 <property name="build.dir" value="build"/>
-<property name="shmem.dir" value="${src.dir}/mp"/>
+<property name="shmem.dir" value="${src.dir}/mp/java"/>
 <property name="common.dir" value="${src.dir}/common/util"/>
 <property name="delaunay.dir" value="${src.dir}/DelaunayRefinement/src/java"/>
 <property name="classes.dir" value="${build.dir}/classes"/>

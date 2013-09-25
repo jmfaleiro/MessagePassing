@@ -33,7 +33,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import mp.ShMemObject;
+import mp.java.ShMemObject;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ObjectNode;

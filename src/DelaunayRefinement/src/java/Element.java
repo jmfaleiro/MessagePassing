@@ -27,7 +27,7 @@ faleiro.jose.manuel@gmail.com
 
 package DelaunayRefinement.src.java;
 
-import mp.ShMemObject;
+import mp.java.*;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;

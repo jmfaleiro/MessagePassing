@@ -11,8 +11,7 @@ import org.codehaus.jackson.node.ArrayNode;
 
 import common.util.Time;
 
-import mp.ShMem;
-import mp.ShMemObject;
+import mp.java.*;
 
 public class DelaunayScheduler {
 

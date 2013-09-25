@@ -1,4 +1,4 @@
-package mp;
+package mp.java;
 
 public class ShMemFailure extends Exception{
 

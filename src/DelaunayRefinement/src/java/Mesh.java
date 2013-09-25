@@ -39,7 +39,7 @@ import java.util.LinkedList;
 import java.util.Scanner;
 import java.util.Stack;
 
-import mp.ShMemObject;
+import mp.java.*;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;

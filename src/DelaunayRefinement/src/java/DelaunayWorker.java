@@ -2,8 +2,7 @@ package DelaunayRefinement.src.java;
 
 import org.codehaus.jackson.node.ArrayNode;
 
-import mp.ShMem;
-import mp.ShMemObject;
+import mp.java.*;
 
 public class DelaunayWorker {
 

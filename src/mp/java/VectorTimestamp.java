@@ -1,6 +1,6 @@
-package mp;
+package mp.java;
 
-import mp.ITimestamp.Comparison;
+import mp.java.ITimestamp.Comparison;
 
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.IntNode;

@@ -1,4 +1,4 @@
-package mp;
+package mp.java;
 
 
 import org.json.simple.*;
