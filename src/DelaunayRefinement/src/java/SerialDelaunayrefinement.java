@@ -20,9 +20,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 File: SerialDelaunayrefinement.java 
-
-Modified by Jose Manuel Faleiro
-faleiro.jose.manuel@gmail.com
 */
 
 package DelaunayRefinement.src.java;
@@ -96,11 +93,9 @@ public class SerialDelaunayrefinement {
       System.err.println();
     }
     long id = Time.getNewTimeId();
-    
     while (!worklist.isEmpty()) {
       int bad_element = worklist.removeFirst();
       if (mesh.containsNode(bad_element)) {
-    	  
         cavity.initialize(bad_element);
         cavity.build();
         cavity.update();
@@ -113,6 +108,7 @@ public class SerialDelaunayrefinement {
         for (int bad : cavity.getPost().newBad()) {
         	worklist.addLast(bad);
         }
+        
       }
     }
     long time = Time.elapsedTime(id,  true);

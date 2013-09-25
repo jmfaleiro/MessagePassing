@@ -20,13 +20,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 File: Subgraph.java 
-
-Modified by Jose Manuel Faleiro
-faleiro.jose.manuel@gmail.com
-
 */
 
 package DelaunayRefinement.src.java;
+
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -56,7 +53,7 @@ public class Subgraph {
   }
   
   public boolean addNode(int n, Mesh mesh) {
-	  ShMemObject node_data = mesh.getNodeData(n);
+	  ObjectNode node_data = mesh.getNodeData(n);
 	  if (Element.isBad(node_data)) {
 		  bad_nodes.add(n);
 	  }

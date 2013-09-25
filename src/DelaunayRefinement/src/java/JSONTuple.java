@@ -1,5 +1,5 @@
 /*
- * Created by Jose Manuel Faleiro 
+ * Created by Jose Faleiro at Yale University
  * faleiro.jose.manuel@gmail.com
  */
 
