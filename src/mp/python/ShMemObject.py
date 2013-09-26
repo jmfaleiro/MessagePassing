@@ -1,11 +1,13 @@
 import copy
 import timestamp_util
 
+
+# Instance fields:
+# m_parent 		-- ShMemObject that's the parent of this object
+# m_parent_key		-- The key whose value is this object
+# m_values		-- Dictionary of key-value pairs. 
+# m_timestamps		-- Dictionary of key-timestamp pairs. 
 class ShMemObject:
-    
-    # This static variable tells us what time it is
-    # "now". 
-    s_now = []
         
     def __init__(self):
         self.m_parent = parent

@@ -2,6 +2,10 @@ import socket
 import json
 import thread
 
+# Instance fields: 
+# m_serversock		-- Server socket used by the acquiring server thread.
+# m_port		-- Port the server thread binds to. 
+# m_recvd_objs		-- Dictionary of concurrent queues we've received from. 
 class ShMemAcquirer:    
 
     # Class constructor, all we do is specify the port to which it should bind. 
