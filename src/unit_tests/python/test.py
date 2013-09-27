@@ -112,8 +112,9 @@ class ShMemTest(unittest.TestCase):
         first_obj.put_object('second', second_obj)        
         
     def testMerge(self):
-        self.standardInit()
-        
+
+        # Generate an obvious leaf-leaf conflict. The merge should fail. 
+        self.standardInit()        
         to_merge = {'name' : 
                     {'shmem_timestamp': [0,0,1,0], 
                      'value': 
@@ -124,20 +125,37 @@ class ShMemTest(unittest.TestCase):
         with self.assertRaises(AttributeError):
             ShMem.s_state.merge(to_merge)
             
+        # Make sure that a non-conflicting change at a non-comparable timestamp
+        # propagates the right timestamp to the root. 
+        self.standardInit()            
         to_merge = {'jose' : 
                     {'shmem_timestamp' : [0,0,1,0],
                      'value' : 'faleiro'}}
-        
-        self.standardInit()
         ShMem.s_state.merge(to_merge)
         faleiro = ShMem.s_state.get('jose')
         self.failUnless(faleiro == 'faleiro')
         self.assertEqual(Timestamp.CompareTimestamps(ShMemObject.s_now,
                                                      [2,2,1,0]),
                          Comparison.EQUAL)
-                         
         
-        
+        # Leaf-leaf conflict but the timestamp of one subsumes the other. 
+        # Shouldn't fail and the new timestamp should propagate to the root. 
+        self.standardInit()
+        to_merge = {'name' : 
+                    {'shmem_timestamp': [2,2,1,0], 
+                     'value': 
+                     {'Yale' : 
+                      {'shmem_timestamp':[2,2,1,0],
+                       'value' : 'College'}}}}
+        ShMem.s_state.merge(to_merge)
+        self.assertEqual(Timestamp.CompareTimestamps(ShMemObject.s_now,
+                                                     [2,2,1,0]),
+                         Comparison.EQUAL)
+        self.assertEqual(ShMem.s_state.get('name').get('Yale'), 'College')
+        yale_timestamp = ShMem.s_state.get('name').m_timestamps['Yale']
+        self.assertEqual(yale_timestamp, [2,2,1,0])
+        name_timestamp = ShMem.s_state.m_timestamps['name']
+        self.assertEqual(name_timestamp, [2,2,1,0])        
         
     # Test diffing an ShMemObject.         
     def testDiff(self):

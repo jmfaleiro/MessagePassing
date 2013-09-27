@@ -67,10 +67,10 @@ class ShMemObject:
         # The value is a dictionary, we have to recursively deserialize every
         # one of its values
         ret = ShMemObject()
-        for obj_key,obj_wrapper in obj:
+        for obj_key,obj_wrapper in obj.iteritems():
             real_value = obj_wrapper['value']
-            timestamp = obj_wrapper['timestamp']            
-            deserialized_value = deserializeObjectNode(real_value)
+            timestamp = obj_wrapper['shmem_timestamp']            
+            deserialized_value = ShMemObject.deserializeObjectNode(real_value)
             ret.insertAt(obj_key, deserialized_value, timestamp)
         return ret
 
