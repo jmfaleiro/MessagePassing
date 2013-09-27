@@ -48,10 +48,8 @@ class ShMemTest(unittest.TestCase):
         self.assertEqual(Timestamp.CompareTimestamps(start_time, [5,5,5]),
                          Comparison.NONE)
 
-    def testStart(self):
-        ShMem.init('test_file.txt', 0)
-        
-        
+    def testPutGet(self):
+        ShMem.init('test_file.txt', 0)        
         ShMem.start()
         self.assertEqual(ShMemObject.s_now, [1,0,0,0])
 
@@ -66,10 +64,31 @@ class ShMemTest(unittest.TestCase):
         
         # Increment time. 
         Timestamp.LocalIncrement(ShMemObject.s_now)
+        
+        # Make sure that we actually managed to change the time. 
+        self.assertEqual(Timestamp.CompareTimestamps(ShMemObject.s_now,
+                                                     [2,0,0,0]),
+                         Comparison.EQUAL)
+        
         first_obj.put_simple('CS', 'Watson')
         
-        # Make sure that 'name's timestamp has changed to the right value. 
+        # The timestamp of the object we previously inserted should not
+        # change. 
+        yale_timestamp = first_obj.m_timestamps['Yale']
+        self.assertEqual(Timestamp.CompareTimestamps(yale_timestamp,
+                                                     [1,0,0,0]),
+                         Comparison.EQUAL)
 
+        # The newly inserted item must have the right timestamp. 
+        cs_timestamp = first_obj.m_timestamps['CS']
+        self.assertEqual(Timestamp.CompareTimestamps(cs_timestamp,
+                                                     [2,0,0,0]),
+                         Comparison.EQUAL)
+
+        # Make sure that 'name's timestamp has changed to the right value. 
+        name_timestamp = ShMem.s_state.m_timestamps['name']
+        self.assertEqual(Timestamp.CompareTimestamps(name_timestamp, [2,0,0,0]),
+                         Comparison.EQUAL)
         
 def main():
     unittest.main()

@@ -1,5 +1,5 @@
 import copy
-import timestamp_util
+from timestamp_util import *
 
 
 # Instance fields:
@@ -18,14 +18,15 @@ class ShMemObject:
         
     # Propagate the timestamp "time" from the node cur all the way up to
     # the root. 
+    @staticmethod
     def fixTime(cur, time):
         while not (cur.m_parent is None):
             key = cur.m_parent_key
             cur_timestamp = cur.m_parent.m_timestamps[key]
             
-            comp = Util.CompareTimestamps(cur_timestamp, time)
+            comp = Timestamp.CompareTimestamps(cur_timestamp, time)
             if comp == Comparison.LESS_THAN:
-                Util.Union(cur_timestamp, time)
+                Timestamp.Union(cur_timestamp, time)
                 cur = cur.m_parent
             else:
                 break
@@ -35,12 +36,14 @@ class ShMemObject:
         self.put_simple(key, value)
         value.m_parent = self
         value.m_parent_key = key
+        ShMemObject.fixTime(self, ShMemObject.s_now)
 
     # This method should be used when 'value' is a simple type, that is,
     # an array, int, double, string, byte[]. 
     def put_simple(self, key, value):
         self.m_values[key] = value
         self.m_timestamps[key] = copy.deepcopy(ShMemObject.s_now)
+        ShMemObject.fixTime(self, ShMemObject.s_now)
 
     # Getter for a given key
     def get(self, key):
@@ -49,10 +52,10 @@ class ShMemObject:
     # Forcibly insert a key-value pair at the specified timestamp. We use
     # this method only while merging with a remote node's state. 
     def insertAt(self, key, value, timestamp):
-        Util.Union(ShMemObject.s_now, timestamp)
+        Timestamp.Union(ShMemObject.s_now, timestamp)
         self.m_timestamps[key] = timestamp
         self.m_values[key] = value
-        fixTime(self, timestamp)
+        ShMemObject.fixTime(self, timestamp)
 
 
     def deserializeObjectNode(obj):
@@ -86,7 +89,9 @@ class ShMemObject:
             if other_key in self.m_values:
                 my_timestamp = self.m_timestamps[other_key]
                 my_value = self.m_values[other_key]
-                comp = Util.CompareTimestamps(my_timestamp, other_timestamp)
+                comp = Timestamp.CompareTimestamps(my_timestamp, 
+                                                   other_timestamp)
+                
                 
                 # Both have written to the same node. Try to merge, if we fail
                 # then an exception gets automatically thrown. 
@@ -112,7 +117,7 @@ class ShMemObject:
             # If the timestamp is greater than 'timestamp' then we need to add
             # the value to the diff tree.             
             cur_timestamp = self.m_timestamps[k]
-            comp = Util.CompareTimestamps(timestamp, cur_timestamp)
+            comp = Timestamp.CompareTimestamps(timestamp, cur_timestamp)
             if comp == Comparison.LESS_THAN:
                 
                 # If the value is itself an ShMemObject, then recursively
