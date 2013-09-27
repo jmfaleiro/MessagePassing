@@ -1,5 +1,6 @@
 import socket
 import json
+from threading import *
 import thread
 
 # Instance fields: 
@@ -9,18 +10,11 @@ import thread
 class ShMemAcquirer:    
 
     # Class constructor, all we do is specify the port to which it should bind. 
-    def __init__(self, port, index, total_nodes):
+    def __init__(self, port, index, receive_queues):
         self.m_serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.m_port = port
-        self.m_recvd_objs = []
+        self.m_recvd_objs = receive_queues
         
-        # For now, just use a coarse-grained lock on the entire received state
-        # when we wish to acquire state. 
-        self.m_queue_lock = threading.Lock()
-        
-        for i in range(0, total_nodes):
-            self.m_recvd_objs[i] = []                
-
         # Create a new thread to run the server. 
         thread.start_new_thread(self.run())
     
@@ -54,6 +48,5 @@ class ShMemAcquirer:
             msg = json.load(serialized_msg)            
             
             # Put the recieved state into the right receive queue. 
-            self.m_queue_lock.acquire()
-            self.m_recvd_objs[sender].append(msg)
-            self.m_queue_lock.release()
+            self.m_recvd_objs[sender].enqueue(msg)
+

@@ -1,8 +1,8 @@
-import ShMemObject
-import ShMemAcquirer
-import ShMemReleaser
-import timestamp_util
-import ConcurrentQueue
+from ShMemObject import *
+from ShMemAcquirer import *
+from ShMemReleaser import *
+from timestamp_util import *
+from ConcurrentQueue import *
 
 # Static fields:
 # s_addresses		-- Pairs of (IP, port) on which remote procs live.
@@ -17,6 +17,7 @@ class ShMem:
 
     # Populate the "address book" with the addresses (IP, port) pairs of 
     # nodes in the system. 
+    @staticmethod
     def populate_addresses(input_file):
         ret = {}
         ins = open(input_file, "r")
@@ -26,15 +27,17 @@ class ShMem:
             listen_port = int(parts[1])
             ret[counter] = (parts[0], listen_port)
             counter += 1
+        return ret
 
     # Initialize s_state. All nodes inserted into s_state after this call 
     # but before the call to start are not shipped to other nodes. We do this
     # so that all nodes can potentially start with the same initial state. 
+    @staticmethod
     def init(address_book, my_id):
         ShMem.s_index = my_id
         
         # Get the address of each node. 
-        ShMem.s_addresses = populate_addresses(address_book)
+        ShMem.s_addresses = ShMem.populate_addresses(address_book)
         Timestamp.init(len(ShMem.s_addresses), my_id)
         ShMemObject.s_now = Timestamp.CreateZero()
         ShMem.s_state = ShMemObject()
@@ -52,14 +55,16 @@ class ShMem:
         
     # Once this function is called, all changes made to s_state are tracked
     # and sent as part of this diffing process. 
+    @staticmethod
     def start():
         ip, port = ShMem.s_addresses[ShMem.s_index]
         total_nodes = len(ShMem.s_addresses)
-        ShMem.s_acquirer = ShMemAcquirer(port, ShMem.s_index, total_nodes)
-        ShMem.s_releaser = ShMemReleaser(ShMem.s_index, ShMem.s_send_queue)
+        #ShMem.s_acquirer = ShMemAcquirer(port, ShMem.s_index, total_nodes)
+        #ShMem.s_releaser = ShMemReleaser(ShMem.s_index, ShMem.s_send_queue)
         Timestamp.LocalIncrement(ShMemObject.s_now)
         
     # Merge s_state with the state we've received from a remote node. 
+    @staticmethod
     def Acquire(node):
         delta = ShMem.s_receive_queues[node].dequeue()
         s_state.merge(delta)
@@ -69,6 +74,7 @@ class ShMem:
 
     # Release our diffs to another node. Put it in the send queue for the
     # ShMemReleaser thread to get to. 
+    @staticmethod
     def Release(node):
         last_sync = ShMem.s_last_sync[node]
         cur_delta = ShMem.s_state.get_diffs(last_sync)

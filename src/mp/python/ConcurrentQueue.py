@@ -1,11 +1,11 @@
-import threading
+from threading import *
 
 class ConcurrentQueue:
     
     def __init__(self):
         self.m_data = []
-        queue_lock = threading.RLock()
-        self.m_condition = threading.condition(queue_lock)
+        queue_lock = Lock()
+        self.m_condition = Condition(queue_lock)
         
 
     def enqueue(item):

@@ -10,8 +10,8 @@ import timestamp_util
 class ShMemObject:
         
     def __init__(self):
-        self.m_parent = parent
-        self.m_parent_key = parent_key        
+        self.m_parent = None
+        self.m_parent_key = None
         self.m_values = {}	# JSON dictionary
         self.m_timestamps = {}
 
