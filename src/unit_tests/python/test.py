@@ -48,6 +48,31 @@ class ShMemTest(unittest.TestCase):
         self.assertEqual(Timestamp.CompareTimestamps(start_time, [5,5,5]),
                          Comparison.NONE)
 
+    # Test diffing an ShMemObject.         
+    def testDiff(self):
+        ShMem.init('test_file.txt', 0)
+        ShMem.start()
+        
+        first_obj = ShMemObject()
+        first_obj.put_simple('Yale', 'University')
+        ShMem.s_state.put_object('name', first_obj)        
+        
+        # Increment time. 
+        Timestamp.LocalIncrement(ShMemObject.s_now)        
+        first_obj.put_simple('CS', 'Watson')
+
+        # Change s_now arbitratily. 
+        ShMemObject.s_now = [2,2,0,0]
+
+        # Make sure that timestamps work properly when we're nesting objects. 
+        second_obj = ShMemObject()
+        second_obj.put_simple('gah', 'blah')
+        first_obj.put_object('second', second_obj)
+
+        print ShMem.s_state.get_diffs([0,0,0,0])
+
+
+    # Test gets and puts into an ShMemObject. 
     def testPutGet(self):
         ShMem.init('test_file.txt', 0)        
         ShMem.start()
@@ -89,6 +114,22 @@ class ShMemTest(unittest.TestCase):
         name_timestamp = ShMem.s_state.m_timestamps['name']
         self.assertEqual(Timestamp.CompareTimestamps(name_timestamp, [2,0,0,0]),
                          Comparison.EQUAL)
+
+        # Change s_now arbitratily. 
+        ShMemObject.s_now = [2,2,0,0]
+
+        # Make sure that timestamps work properly when we're nesting objects. 
+        second_obj = ShMemObject()
+        second_obj.put_simple('gah', 'blah')
+        first_obj.put_object('second', second_obj)
+        self.assertEqual(Timestamp.CompareTimestamps(name_timestamp, [2,2,0,0]),
+                         Comparison.EQUAL)
+        
+        
+        
+        
+        
+
         
 def main():
     unittest.main()
