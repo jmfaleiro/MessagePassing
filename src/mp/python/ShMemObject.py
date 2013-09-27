@@ -61,7 +61,7 @@ class ShMemObject:
     def deserializeObjectNode(obj):
         
         # If the value is not a dictionary, then we're done. 
-        if not (type(obj) is dict):
+        if not isinstance(obj, dict):
             return obj
         
         # The value is a dictionary, we have to recursively deserialize every
@@ -77,7 +77,7 @@ class ShMemObject:
     def do_recursive_insert(self, key, wrapped_value):
         to_insert = deserializeObjectNode(obj['value'])
         self.insertAt(key, to_insert, obj['shmem_timestamp'])
-        if type(to_insert) == ShMemObject:
+        if isinstance(to_insert, ShMemObject):
             to_insert.m_parent = self
             to_insert.m_parent_key = key
 
@@ -109,22 +109,22 @@ class ShMemObject:
     # be immediately serialized using Python's JSON library.
     def get_diffs(self, timestamp):
         ret = {}
-        
+
         # Iterate through all the keys in the current ShMemObject
-        for key,value in self.m_values:
+        for key,value in self.m_values.iteritems():
 
             # Get the timestamp of the current key-value pair.
             # If the timestamp is greater than 'timestamp' then we need to add
             # the value to the diff tree.             
-            cur_timestamp = self.m_timestamps[k]
+            cur_timestamp = self.m_timestamps[key]
             comp = Timestamp.CompareTimestamps(timestamp, cur_timestamp)
             if comp == Comparison.LESS_THAN:
                 
                 # If the value is itself an ShMemObject, then recursively
                 # fetch the parts of the object that were changed after
                 # 'timestamp'. Otherwise, we just fetch the leaf. 
-                if type(value) == ShMemObject:
-                    serialized_value = get_diffs(value, timestamp)
+                if isinstance(value, ShMemObject):
+                    serialized_value = value.get_diffs(timestamp)
                 else:
                     serialized_value = value
                     

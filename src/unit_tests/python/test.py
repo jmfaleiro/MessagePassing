@@ -68,8 +68,15 @@ class ShMemTest(unittest.TestCase):
         second_obj = ShMemObject()
         second_obj.put_simple('gah', 'blah')
         first_obj.put_object('second', second_obj)
-
-        print ShMem.s_state.get_diffs([0,0,0,0])
+        
+        # We're asking for a diff whose timestamp subsumes everything in the 
+        # ShMemObject. 
+        diff = ShMem.s_state.get_diffs([2,3,0,0])
+        self.failUnless(len(diff) == 0)
+        
+        diff = ShMem.s_state.get_diffs([0,0,0,0])
+        
+        diff = ShMem.s_state.get_diffs([1,0,0,0])
 
 
     # Test gets and puts into an ShMemObject. 
