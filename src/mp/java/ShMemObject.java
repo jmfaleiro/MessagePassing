@@ -47,9 +47,9 @@ public class ShMemObject extends ObjectNode {
 		m_timestamps = new HashMap<String, int[]>();
 	}
 	
-	private HashMap<String, ListNode> m_key_map;
-	private InternalLinkedList m_sorted_keys;
-	private HashMap<String, int[]> m_timestamps;
+	public HashMap<String, ListNode> m_key_map;
+	public InternalLinkedList m_sorted_keys;
+	public HashMap<String, int[]> m_timestamps;
 	
 	protected class ListNode {
 		

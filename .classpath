@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="lib/chronicle-1.6.jar"/>
 	<classpathentry kind="lib" path="lib/DeExifier1.1.jar"/>
 	<classpathentry kind="lib" path="lib/metadata-extractor-2.6.4-src.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
