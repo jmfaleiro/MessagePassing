@@ -89,10 +89,9 @@ class ShMemTest(unittest.TestCase):
         self.assertEqual(yale_wrapper['value'], 'University')
 
 
-
-        
-    # Test diffing an ShMemObject.         
-    def testDiff(self):
+    # Initialize an ShMemObject with a set of keys and timestamps so that we 
+    # can test our diff-n-merge code. 
+    def standardInit(self):
         ShMem.init('test_file.txt', 0)
         ShMem.start()
         
@@ -110,7 +109,39 @@ class ShMemTest(unittest.TestCase):
         # Make sure that timestamps work properly when we're nesting objects. 
         second_obj = ShMemObject()
         second_obj.put_simple('gah', 'blah')
-        first_obj.put_object('second', second_obj)
+        first_obj.put_object('second', second_obj)        
+        
+    def testMerge(self):
+        self.standardInit()
+        
+        to_merge = {'name' : 
+                    {'shmem_timestamp': [0,0,1,0], 
+                     'value': 
+                     {'Yale' : 
+                      {'shmem_timestamp':[0,0,1,0],
+                       'value' : 'College'}}}}
+        
+        with self.assertRaises(AttributeError):
+            ShMem.s_state.merge(to_merge)
+            
+        to_merge = {'jose' : 
+                    {'shmem_timestamp' : [0,0,1,0],
+                     'value' : 'faleiro'}}
+        
+        self.standardInit()
+        ShMem.s_state.merge(to_merge)
+        faleiro = ShMem.s_state.get('jose')
+        self.failUnless(faleiro == 'faleiro')
+        self.assertEqual(Timestamp.CompareTimestamps(ShMemObject.s_now,
+                                                     [2,2,1,0]),
+                         Comparison.EQUAL)
+                         
+        
+        
+        
+    # Test diffing an ShMemObject.         
+    def testDiff(self):
+        self.standardInit()
         
         # We're asking for a diff whose timestamp subsumes everything in the 
         # ShMemObject. 
@@ -181,12 +212,7 @@ class ShMemTest(unittest.TestCase):
         second_obj.put_simple('gah', 'blah')
         first_obj.put_object('second', second_obj)
         self.assertEqual(Timestamp.CompareTimestamps(name_timestamp, [2,2,0,0]),
-                         Comparison.EQUAL)
-        
-        
-        
-        
-        
+                         Comparison.EQUAL)        
 
         
 def main():

@@ -57,7 +57,7 @@ class ShMemObject:
         self.m_values[key] = value
         ShMemObject.fixTime(self, timestamp)
 
-
+    @staticmethod
     def deserializeObjectNode(obj):
         
         # If the value is not a dictionary, then we're done. 
@@ -75,14 +75,14 @@ class ShMemObject:
         return ret
 
     def do_recursive_insert(self, key, wrapped_value):
-        to_insert = deserializeObjectNode(obj['value'])
-        self.insertAt(key, to_insert, obj['shmem_timestamp'])
+        to_insert = ShMemObject.deserializeObjectNode(wrapped_value['value'])
+        self.insertAt(key, to_insert, wrapped_value['shmem_timestamp'])
         if isinstance(to_insert, ShMemObject):
             to_insert.m_parent = self
             to_insert.m_parent_key = key
 
     def merge(self, obj):
-        for other_key,wrapped_value in obj:
+        for other_key,wrapped_value in obj.iteritems():
             other_timestamp = wrapped_value['shmem_timestamp']
             other_value = wrapped_value['value']
             
