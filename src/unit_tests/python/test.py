@@ -46,8 +46,51 @@ class ShMemTest(unittest.TestCase):
         self.assertEqual(Timestamp.CompareTimestamps(start_time, [4,7,4]),
                          Comparison.EQUAL)
         self.assertEqual(Timestamp.CompareTimestamps(start_time, [5,5,5]),
-                         Comparison.NONE)
+                         Comparison.NONE)        
+    
+    def checkGah(self, diff):
+        name_wrapper = diff['name']
+        name_timestamp = name_wrapper['shmem_timestamp']
+        self.assertEqual(Timestamp.CompareTimestamps(name_timestamp, [2,2,0,0]),
+                         Comparison.EQUAL)
 
+        second = name_wrapper['value']
+
+        second_wrapper = second['second']
+        second_timestamp = second_wrapper['shmem_timestamp']
+        self.assertEqual(Timestamp.CompareTimestamps(second_timestamp, 
+                                                     [2,2,0,0]),
+                         Comparison.EQUAL)
+
+        gah = second_wrapper['value']		# gah
+        gah_wrapper = gah['gah']
+        self.assertEqual(
+            Timestamp.CompareTimestamps(
+                gah_wrapper['shmem_timestamp'], 
+                [2,2,0,0]),
+            Comparison.EQUAL)
+        
+        self.assertEqual(gah_wrapper['value'], 'blah')
+
+    def checkWatson(self, diff):
+        name_wrapper = diff['name']
+        cs_wrapper = name_wrapper['value']['CS']
+        cs_timestamp = cs_wrapper['shmem_timestamp']
+        self.assertEqual(Timestamp.CompareTimestamps(cs_timestamp,[2,0,0,0]),
+                         Comparison.EQUAL)        
+        self.assertEqual(cs_wrapper['value'], 'Watson')
+
+    def checkYale(self, diff):
+        name_wrapper = diff['name']
+        yale_wrapper = name_wrapper['value']['Yale']
+        yale_timestamp = yale_wrapper['shmem_timestamp']
+        self.assertEqual(Timestamp.CompareTimestamps(yale_timestamp,[1,0,0,0]),
+                         Comparison.EQUAL)
+        self.assertEqual(yale_wrapper['value'], 'University')
+
+
+
+        
     # Test diffing an ShMemObject.         
     def testDiff(self):
         ShMem.init('test_file.txt', 0)
@@ -73,12 +116,20 @@ class ShMemTest(unittest.TestCase):
         # ShMemObject. 
         diff = ShMem.s_state.get_diffs([2,3,0,0])
         self.failUnless(len(diff) == 0)
-        
-        diff = ShMem.s_state.get_diffs([0,0,0,0])
+
+        diff = ShMem.s_state.get_diffs([2,1,0,0])
+        self.checkGah(diff)
         
         diff = ShMem.s_state.get_diffs([1,0,0,0])
+        self.checkGah(diff)
+        self.checkWatson(diff)
+        
+        diff = ShMem.s_state.get_diffs([0,0,0,0])
+        self.checkGah(diff)
+        self.checkWatson(diff)
+        self.checkYale(diff)
 
-
+        
     # Test gets and puts into an ShMemObject. 
     def testPutGet(self):
         ShMem.init('test_file.txt', 0)        
