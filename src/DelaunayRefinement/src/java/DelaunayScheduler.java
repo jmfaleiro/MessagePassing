@@ -93,7 +93,13 @@ public class DelaunayScheduler {
 	    System.gc();
 		
 	    for (int worker_id : m_workers.keySet()) {
-			ShMem.Acquire(worker_id);
+	    	try {
+	    		ShMem.Acquire(worker_id);
+	    	}
+	    	catch (ShMemObject.MergeException e) {
+	    		System.out.println("Merge failed!");
+	    		System.exit(-1);
+	    	}
 		}
 		int num_workers = m_workers.size();
 		
@@ -123,7 +129,13 @@ public class DelaunayScheduler {
 			// We'll only get out of this loop when there are bad nodes and
 			// when we have at least one free worker. 
 			while (m_worklist.isEmpty() || first_free == last_waiter + num_workers) {
-				ShMem.Acquire(waiting_on[last_waiter % num_workers]);
+				try {
+					ShMem.Acquire(waiting_on[last_waiter % num_workers]);
+				}
+				catch (ShMemObject.MergeException e) {
+					System.out.println("Merge failed!");
+					System.exit(-1);
+				}
 				getBadNodes(waiting_on[last_waiter % num_workers]);
 				free_workers[waiting_on[last_waiter % num_workers]] = true;
 				waiting_on[last_waiter % num_workers] = -1;

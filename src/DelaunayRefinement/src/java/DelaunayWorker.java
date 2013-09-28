@@ -51,7 +51,13 @@ public class DelaunayWorker {
 			
 			// The acquire shouldn't throw an exception because the 
 			// scheduler should have taken care of any inconsistencies. 
-			ShMem.Acquire(m_scheduler_id);
+			try {
+				ShMem.Acquire(m_scheduler_id);
+			}
+			catch (ShMemObject.MergeException e) {
+				System.out.println("Merge failed!");
+				System.exit(-1);
+			}
 			ShMemObject my_container = (ShMemObject)ShMem.s_state.get(m_id);
 			
 			try {

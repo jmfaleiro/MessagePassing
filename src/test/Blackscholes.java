@@ -7,7 +7,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 
-import mp.*;
+import mp.java.*;
 
 public class Blackscholes {
 	
@@ -159,7 +159,7 @@ public class Blackscholes {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static void runParallel(String input_file, int node_id, int total_nodes) throws InterruptedException, ShMemFailure {
+	public static void runParallel(String input_file, int node_id, int total_nodes) throws InterruptedException {
 		if (node_id == 0) {
 			
 			parse_options(ShMem.s_state, input_file);
@@ -168,7 +168,13 @@ public class Blackscholes {
 				ShMem.Release(i);
 			}
 			for (int i = 1; i < total_nodes; ++i) {
-				ShMem.Acquire(i);
+				try {
+					ShMem.Acquire(i);
+				}
+				catch (ShMemObject.MergeException e) {
+					System.out.println("Merge failed!");
+					System.exit(-1);
+				}
 			}
 			
 			ShMemObject result_objs = (ShMemObject)ShMem.s_state.get("results");
@@ -181,7 +187,13 @@ public class Blackscholes {
 			}
 		}
 		else {
-			ShMem.Acquire(0);
+			try {
+				ShMem.Acquire(0);
+			}
+			catch (ShMemObject.MergeException e) {
+				System.out.println("Merge failed!");
+				System.exit(-1);
+			}
 			process(node_id);
 			ShMem.Release(0);
 		}

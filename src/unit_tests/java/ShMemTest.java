@@ -9,7 +9,6 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
-import org.json.simple.JSONObject;
 
 import mp.java.ITimestamp.Comparison;
 import mp.java.ShMem;
