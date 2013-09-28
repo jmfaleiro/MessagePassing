@@ -103,14 +103,34 @@ public class ShMemObject extends ObjectNode {
 			}
 		}
 		
+		public void MoveFront(ListNode cur) {
+			
+			// If prev is null, the node is already at the front of the list. 
+			if (cur.m_prev != null) {
+				cur.m_prev.m_next = cur.m_next;
+				if (cur.m_next != null) {
+					cur.m_next.m_prev = cur.m_prev;
+				}
+			}
+		}
+		
 		public void Remove(ListNode cur) {
 			ListNode prev = cur.m_prev;
 			ListNode next = cur.m_next;
 			
-			if (prev != null) {
+			// We're trying to remove a head node. 
+			if (prev == null) {
+				m_head = next;
+			}
+			else {
 				prev.m_next = next;
 			}
-			if (next != null) {
+			
+			// We're trying to remove a tail node. 
+			if (next == null) {
+				m_tail = prev;
+			}
+			else {
 				next.m_prev = prev;
 			}
 			
@@ -168,8 +188,7 @@ public class ShMemObject extends ObjectNode {
 				VectorTimestamp.Union(cur_timestamp,  time);
 				
 				ListNode cur_node = cur.parent.m_key_map.get(cur.parent_key);
-				cur.parent.m_sorted_keys.Remove(cur_node);
-				cur.parent.m_sorted_keys.InsertFront(cur_node);
+				cur.parent.m_sorted_keys.MoveFront(cur_node);
 				
 				cur = cur.parent;
 			}
@@ -191,7 +210,7 @@ public class ShMemObject extends ObjectNode {
 		// The keys are sorted in timestamp order, so we can stop iterating
 		// so long as ts is less than the current node's timestamp. 
 		for (ListNode cur = obj.m_sorted_keys.m_head; 
-			 VectorTimestamp.Compare(ts, cur.m_timestamp) == Comparison.LT;
+			 cur != null && VectorTimestamp.Compare(ts, cur.m_timestamp) == Comparison.LT;
 			 cur = cur.m_next) {
 			
 			// Create a wrapper which will contain the actual value and its
@@ -292,14 +311,13 @@ public class ShMemObject extends ObjectNode {
 			int[] new_timestamp = VectorTimestamp.Copy(s_now);
 			cur_node = new ListNode(fieldname, new_timestamp);
 			m_key_map.put(fieldname,  cur_node);
-			int[] kvp_timestamp = VectorTimestamp.Copy(s_now);
-			m_timestamps.put(fieldname, kvp_timestamp);
+			m_timestamps.put(fieldname, new_timestamp);
+			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			
 			VectorTimestamp.CopyFromTo(s_now, m_timestamps.get(fieldname));
-			m_sorted_keys.Remove(cur_node);
-			m_sorted_keys.InsertFront(cur_node);
+			m_sorted_keys.MoveFront(cur_node);
 		}
 	}
 	
@@ -570,8 +588,7 @@ public class ShMemObject extends ObjectNode {
 					
 					// Move this key's list node to the front. 
 					ListNode my_list_node = m_key_map.get(key);
-					m_sorted_keys.Remove(my_list_node);
-					m_sorted_keys.InsertFront(my_list_node);
+					m_sorted_keys.MoveFront(my_list_node);
 				}
 				else {
 					// Two cases: Either we are greater, in which case we can keep our changes. 

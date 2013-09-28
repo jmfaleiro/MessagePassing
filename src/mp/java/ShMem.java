@@ -49,9 +49,27 @@ public class ShMem {
 	// deltas from state_ while releasing. 
 	private static Map<Integer, int[]> m_last_sync;  
 	
+	public static void InitTest(int node_id) {
+		VectorTimestamp.Init(addresses.size(),  node_id);
+		VectorTimestamp.CreateDefault();
+		VectorTimestamp.s_zero = VectorTimestamp.CreateZero();
+		m_last_sync = new HashMap<Integer, int[]>();
+		
+		for (int i = 0; i < addresses.size(); ++i)
+			m_last_sync.put(i,  VectorTimestamp.CreateZero());
+		
+		ShMemObject.s_now = VectorTimestamp.Copy(VectorTimestamp.s_zero); 
+		ShMemObject.cur_node_ = node_id;
+		
+		s_state = new ShMemObject();
+		
+		deltas_ = new DeltaStore();
+		// acquirer_ = new ShMemAcquirer(node_id, deltas_);
+		// releaser_ = new ShMemReleaser(node_id);
+	}
+	
 	public static void Init(int node_id) {
-		VectorTimestamp.s_local_index = node_id;
-		VectorTimestamp.s_vector_size = addresses.size();
+		VectorTimestamp.Init(addresses.size(),  node_id);
 		VectorTimestamp.CreateDefault();
 		VectorTimestamp.s_zero = VectorTimestamp.CreateZero();
 		m_last_sync = new HashMap<Integer, int[]>();

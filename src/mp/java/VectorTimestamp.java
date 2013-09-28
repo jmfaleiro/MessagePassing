@@ -19,6 +19,7 @@ public class VectorTimestamp {
 	public static void Init(int vector_size, int local_index) {
 		s_vector_size = vector_size;
 		s_local_index = local_index;
+		s_scratch_space = new int[vector_size];
 	}
 	
 	public static void CreateDefault() {

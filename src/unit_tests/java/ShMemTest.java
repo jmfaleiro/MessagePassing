@@ -6,7 +6,9 @@ import static org.junit.Assert.*;
 import java.util.Iterator;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
 import org.json.simple.JSONObject;
 
 import mp.java.ITimestamp.Comparison;
@@ -68,7 +70,7 @@ public class ShMemTest {
 	}
 	
 	private void standardInit() {
-		ShMem.Init(0);
+		ShMem.InitTest(0);
 		ShMem.Start();
 		
 		ShMemObject first_obj = new ShMemObject();
@@ -127,6 +129,11 @@ public class ShMemTest {
 		assertEquals(yale_value.equals("University"), true);
 	}
 	
+	@org.junit.After
+	public void tearDown() {
+		
+	}
+	
 	@org.junit.Test
 	public void testDiff() {
 		standardInit();
@@ -161,7 +168,7 @@ public class ShMemTest {
 	
 	@org.junit.Test
 	public void testPutGet() {
-		ShMem.Init(0);
+		ShMem.InitTest(0);
 		ShMem.Start();
 		int[] temp = {1, 0, 0, 0};
 		assertEquals(VectorTimestamp.Compare(ShMemObject.s_now, temp),
@@ -210,11 +217,16 @@ public class ShMemTest {
 		
 	}
 	
-	/*
+	
 	@org.junit.Test
-	public void test() {
-		fail("Not yet implemented");
+	public void testMerge() {
+		standardInit();
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode to_merge = mapper.createObjectNode();
+		to_merge.put("value",  "faleiro");
+		//to_merge.put("shmem_timestamp")
+		
 	}
-	*/
+	
 
 }
