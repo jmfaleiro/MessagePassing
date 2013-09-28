@@ -95,7 +95,7 @@ public class ShMem {
 	// Acquire state from another process. 
 	// XXX: Automatically blocks the calling thread if
 	// the state isn't yet available. 
-	public static void Acquire(int from) {
+	public static void Acquire(int from) throws ShMemObject.MergeException {
 		int[] since = m_last_sync.get(from);
 		
 		// - Get the appropriate delta.
@@ -103,7 +103,7 @@ public class ShMem {
 		// - Change now_ appropriately.
 		// - Update last_sync_.
 		ObjectNode delta = deltas_.Pop(from);
-		s_state.merge(delta, since);
+		s_state.merge(delta);
 		m_last_sync.put(from,  VectorTimestamp.Copy(ShMemObject.s_now));
 		VectorTimestamp.IncrementLocal(ShMemObject.s_now);
 	}

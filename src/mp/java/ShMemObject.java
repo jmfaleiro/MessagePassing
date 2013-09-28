@@ -21,6 +21,7 @@ import org.apache.commons.lang3.tuple.*;
  */
 public class ShMemObject extends ObjectNode {
 	
+	
 	private static JsonNodeFactory s_factory;
 	
 	// Points to the parent of this object in the recursive ShMemObject hierarchy. 
@@ -44,14 +45,12 @@ public class ShMemObject extends ObjectNode {
 		this.parent_key = "";
 		m_key_map = new HashMap<String, ListNode>();
 		m_sorted_keys = new InternalLinkedList();
-		m_timestamps = new HashMap<String, int[]>();
 	}
 	
 	public HashMap<String, ListNode> m_key_map;
 	public InternalLinkedList m_sorted_keys;
-	public HashMap<String, int[]> m_timestamps;
 	
-	protected class ListNode {
+	public class ListNode {
 		
 		public final String m_key;
 		public final int[] m_timestamp;
@@ -182,7 +181,7 @@ public class ShMemObject extends ObjectNode {
 	private static void fixTime(ShMemObject cur, int[] time) {
 		while (cur.parent != null) {
 			String key = cur.parent_key;
-			int[] cur_timestamp = cur.parent.m_timestamps.get(key);
+			int[] cur_timestamp = cur.parent.m_key_map.get(key).m_timestamp;
 			Comparison comp = VectorTimestamp.Compare(cur_timestamp,  time);
 			if (comp == Comparison.LT) {
 				VectorTimestamp.Union(cur_timestamp,  time);
@@ -297,7 +296,7 @@ public class ShMemObject extends ObjectNode {
 		return (ObjectNode)super.get(key);
 	}
 	
-	private void put_common(String fieldname) {
+	private void put_common(String fieldname, int[] timestamp) {
 		ListNode cur_node;
 		try {
 			cur_node = m_key_map.get(fieldname);
@@ -308,64 +307,69 @@ public class ShMemObject extends ObjectNode {
 		if (cur_node == null) {
 			
 			// Allocate a list node for the new key. 
-			int[] new_timestamp = VectorTimestamp.Copy(s_now);
-			cur_node = new ListNode(fieldname, new_timestamp);
+			cur_node = new ListNode(fieldname, timestamp);
 			m_key_map.put(fieldname,  cur_node);
-			m_timestamps.put(fieldname, new_timestamp);
 			m_sorted_keys.InsertFront(cur_node);
 		}
 		else {	// There already exists a list node and timestamp. 
 			
-			VectorTimestamp.CopyFromTo(s_now, m_timestamps.get(fieldname));
+			VectorTimestamp.CopyFromTo(timestamp, cur_node.m_timestamp);
 			m_sorted_keys.MoveFront(cur_node);
 		}
 	}
 	
 	@Override
 	public void put(String fieldname, BigDecimal v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public void put(String fieldname, boolean v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public void put(String fieldname, byte[] v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname, v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public void put(String fieldname, double v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public void put(String fieldname, float v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public void put(String fieldname, int v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public JsonNode put(String fieldname, JsonNode v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 		return null;
@@ -373,14 +377,16 @@ public class ShMemObject extends ObjectNode {
 	
 	@Override
 	public void put(String fieldname, long v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public void put(String fieldname, String v) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
@@ -389,14 +395,16 @@ public class ShMemObject extends ObjectNode {
 		v.parent = this;
 		v.parent_key = fieldname;
 		
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		super.put(fieldname,  v);
 		fixTime(this, s_now);
 	}
 	
 	@Override
 	public JsonNode remove(String fieldname) {
-		put_common(fieldname);
+		int[] new_timestamp = VectorTimestamp.Copy(s_now);
+		put_common(fieldname, new_timestamp);
 		JsonNode ret = super.remove(fieldname);
 		fixTime(this, s_now);
 		return ret;
@@ -492,6 +500,7 @@ public class ShMemObject extends ObjectNode {
 	
 	public void InsertAt(String fieldname, JsonNode node, int[] time) {
 		VectorTimestamp.Union(s_now,  time);
+		put_common(fieldname, time);
 		super.put(fieldname,  node);
 		fixTime(this, time);
 	}
@@ -538,7 +547,21 @@ public class ShMemObject extends ObjectNode {
 		return ret;
 	}
 	
-	public void merge(JsonNode release, int[] orig_timestamp) {
+	public class MergeException extends Exception {
+		
+		private String m_message;
+		
+		public MergeException(String value) {
+			m_message = value;
+		}
+		
+		@Override
+		public String toString() {
+			return m_message;
+		}
+	}
+	
+	public void merge(JsonNode release) throws MergeException {
 		Iterator<Map.Entry<String,JsonNode>> fields = release.getFields();
 		
 		while (fields.hasNext()) {
@@ -548,9 +571,11 @@ public class ShMemObject extends ObjectNode {
 			ArrayNode other_timestamp = (ArrayNode)wrapped_value.get("shmem_timestamp");
 			JsonNode other_value = wrapped_value.get("value");
 			
-			int[] my_timestamp = m_timestamps.get(key);
+			ListNode my_list_node = m_key_map.get(key);
 			
-			if (my_timestamp != null) {
+			if (my_list_node != null) {
+				
+				int[] my_timestamp = my_list_node.m_timestamp;
 				
 				// We need to compare timestamps, so use ObjectNode's get. 
 				JsonNode my_value = super.get(key);
@@ -562,12 +587,11 @@ public class ShMemObject extends ObjectNode {
 				// Both have written to the same node.
 				if (comp == Comparison.NONE) {
 					if (other_value.isObject() && my_value.isObject()) {
-						((ShMemObject)my_value).merge(other_value,  orig_timestamp);
+						((ShMemObject)my_value).merge(other_value);
 					}
 					else {
 						// We've just detected a write-write conflict. 
-						System.out.println("Write-write conflict!");
-						System.exit(-1);
+						throw new MergeException("Merge exception!");
 					}
 				}
 				else if (comp == Comparison.LT) {
@@ -587,8 +611,8 @@ public class ShMemObject extends ObjectNode {
 					}
 					
 					// Move this key's list node to the front. 
-					ListNode my_list_node = m_key_map.get(key);
-					m_sorted_keys.MoveFront(my_list_node);
+					ListNode new_list_node = m_key_map.get(key);
+					m_sorted_keys.MoveFront(new_list_node);
 				}
 				else {
 					// Two cases: Either we are greater, in which case we can keep our changes. 
@@ -602,11 +626,6 @@ public class ShMemObject extends ObjectNode {
 				// exist. 
 				int[] new_timestamp = 
 						VectorTimestamp.CopySerialized(other_timestamp);
-				
-				// Also create a new list node to track how new the key is.
-				ListNode new_list_node = new ListNode(key, new_timestamp);
-				m_sorted_keys.InsertFront(new_list_node);
-				m_key_map.put(key,  new_list_node);
 				
 				if (other_value.isObject()) {
 					ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);

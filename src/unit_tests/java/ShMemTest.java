@@ -192,14 +192,14 @@ public class ShMemTest {
 		temp[2] = 0;
 		temp[3] = 0;
 		first_obj.put("CS",  "Watson");
-		int[] yale_timestamp = first_obj.m_timestamps.get("Yale");
+		int[] yale_timestamp = first_obj.m_key_map.get("Yale").m_timestamp;
 		assertEquals(VectorTimestamp.Compare(yale_timestamp,  temp),
 					 Comparison.EQ);
-		int[] cs_timestamp = first_obj.m_timestamps.get("CS");
+		int[] cs_timestamp = first_obj.m_key_map.get("CS").m_timestamp; 
 		temp[0] = 2;
 		assertEquals(VectorTimestamp.Compare(cs_timestamp,  temp),
 					 Comparison.EQ);
-		int[] name_timestamp = ShMem.s_state.m_timestamps.get("name");
+		int[] name_timestamp = ShMem.s_state.m_key_map.get("name").m_timestamp;
 		assertEquals(VectorTimestamp.Compare(name_timestamp,  temp),
 					 Comparison.EQ);
 		
@@ -217,15 +217,95 @@ public class ShMemTest {
 		
 	}
 	
+	private ArrayNode createSerializedTimestamp(int[] vector,
+												ObjectMapper mapper) {
+		ArrayNode ret = mapper.createArrayNode();
+		for (int val : vector) {
+			ret.add(val);
+		}
+		return ret;
+	}
 	
 	@org.junit.Test
 	public void testMerge() {
 		standardInit();
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode to_merge = mapper.createObjectNode();
-		to_merge.put("value",  "faleiro");
-		//to_merge.put("shmem_timestamp")
 		
+		int[] vector = {0,0,1,0};
+		ArrayNode timestamp1 = createSerializedTimestamp(vector, 
+														 mapper);
+		ArrayNode timestamp2 = createSerializedTimestamp(vector,
+														 mapper);
+		
+		ObjectNode yale_value = mapper.createObjectNode();
+		yale_value.put("shmem_timestamp",  timestamp2);
+		yale_value.put("value", "College");
+		
+		ObjectNode yale_node = mapper.createObjectNode();
+		yale_node.put("Yale", yale_value);
+		
+		ObjectNode name_value = mapper.createObjectNode();
+		name_value.put("shmem_timestamp", timestamp1);
+		name_value.put("value", yale_node);
+		
+		ObjectNode name_object = mapper.createObjectNode();
+		name_object.put("name", name_value);
+		
+		// The merge should fail. We're expecting a MergeException. 
+		Throwable expected_exception = null;
+		try {
+			ShMem.s_state.merge(name_object);
+		}
+		catch (Exception ex) {
+			expected_exception = ex;
+		}
+		assertTrue(expected_exception instanceof ShMemObject.MergeException);
+		
+		// Now try merging something that doesn't conflict. 
+		expected_exception = null;
+		standardInit();
+		ObjectNode abc_value = mapper.createObjectNode();
+		abc_value.put("value",  "xyz");
+		abc_value.put("shmem_timestamp", timestamp1);
+		ObjectNode abc_node = mapper.createObjectNode();
+		abc_node.put("abc",  abc_value);
+		
+		// The merge should go through fine. 
+		try {
+			ShMem.s_state.merge(abc_node);
+		}
+		catch (Exception ex) {
+			expected_exception = ex;
+		}
+		assertTrue(expected_exception == null);
+		String xyz_string = ShMem.s_state.get("abc").getTextValue();
+		assertTrue(xyz_string.equals("xyz"));
+		
+		standardInit();
+		int[] new_timestamp = {2,2,1,0};
+		timestamp1 = createSerializedTimestamp(new_timestamp, mapper);
+		timestamp2 = createSerializedTimestamp(new_timestamp, mapper);
+		
+		yale_value.put("shmem_timestamp",  timestamp2);
+		name_value.put("shmem_timestamp", timestamp1);
+		expected_exception = null;
+		try {
+			ShMem.s_state.merge(name_object);
+		}
+		catch (Exception e) {
+			expected_exception = e;
+		}
+		
+		assertTrue(expected_exception == null);
+		assertEquals(VectorTimestamp.Compare(ShMemObject.s_now, new_timestamp),
+					Comparison.EQ);
+		String college_string = ShMem.s_state.get("name").get("Yale").getTextValue();
+		assertTrue(college_string.equals("College"));
+		int[] yale_timestamp = ((ShMemObject)ShMem.s_state.get("name")).m_key_map.get("Yale").m_timestamp;
+		assertEquals(VectorTimestamp.Compare(yale_timestamp,  new_timestamp), Comparison.EQ);
+		int[] name_timestamp = ShMem.s_state.m_key_map.get("name").m_timestamp;
+		assertEquals(VectorTimestamp.Compare(name_timestamp, new_timestamp), Comparison.EQ);
 	}
 	
 
