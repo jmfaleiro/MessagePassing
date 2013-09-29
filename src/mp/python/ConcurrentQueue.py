@@ -4,17 +4,16 @@ class ConcurrentQueue:
     
     def __init__(self):
         self.m_data = []
-        queue_lock = Lock()
-        self.m_condition = Condition(queue_lock)
+        self.m_condition = Condition()
         
 
-    def enqueue(item):
+    def enqueue(self, item):
         self.m_condition.acquire()	# Acquire the lock
         self.m_data.append(item)	# Put the item into the queue
-        self.m_condition.notify()	# Wake up consumer
+        self.m_condition.notifyAll()	# Wake up consumer
         self.m_condition.release()	# Release the lock
 
-    def dequeue():
+    def dequeue(self):
         self.m_condition.acquire()      # Acquire the lock
         
         while len(self.m_data) == 0:	# Wait until the queue is not empty

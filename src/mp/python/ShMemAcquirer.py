@@ -1,6 +1,7 @@
 import socket
 import json
 from threading import *
+from Queue import *
 import thread
 
 # Instance fields: 
@@ -15,20 +16,23 @@ class ShMemAcquirer:
         self.m_port = port
         self.m_recvd_objs = receive_queues
         
+        print self.m_port
         # Create a new thread to run the server. 
-        thread.start_new_thread(self.run())
+        thread.start_new_thread(ShMemAcquirer.run, (self,))
+        print 'here'
     
     # The actual server logic. 
-    def run(self):        
+    @staticmethod
+    def run(me):        
 
         # Bind to the port and tell it we're ready to start listening to clients
-        self.m_serversock.bind((socket.gethostname(), self.m_port))
-        self.m_serversock.listen(5)
+        me.m_serversock.bind(("localhost", me.m_port))
+        me.m_serversock.listen(5)
         
         # Server loop: listen for a client connection, pull out a set of bytes
         # and keep that serialized representation in a dictionary. 
         while 1:
-            (clientsocket, address) = self.m_serversock.accept()
+            (clientsocket, address) = me.m_serversock.accept()
             msg = ''            
 
             # Receive the message from the client. 
@@ -43,12 +47,11 @@ class ShMemAcquirer:
 
             # Close the resource. 
             clientsocket.close()
-
             # Do some deserialization. 
             recvd_obj = json.loads(msg)
             msg = recvd_obj['argument']
-            sender = recvd_obj['releaser']                
-            
+            sender = recvd_obj['releaser']  
+ 
             # Put the recieved state into the right receive queue. 
-            self.m_recvd_objs[sender].enqueue(msg)
+            me.m_recvd_objs[sender].put(msg, True)
 

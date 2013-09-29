@@ -4,11 +4,12 @@ import sys
 sys.path.append('../../../mp/python')
 from ShMem import *
 from ShMemObject import *
+import math
 
 
 class Blackscholes:
     
-    inv_sqrt_2xPI = 0.39894228040143270286
+
     
     # Read all data from the input file. 
     @staticmethod
@@ -49,9 +50,9 @@ class Blackscholes:
         xInput = InputX
 	 
 	# Compute NPrimeX term common to both four & six decimal accuracy calcs
-        expValues = Math.exp(-0.5 * InputX * InputX)
+        expValues = math.exp(-0.5 * InputX * InputX)
         xNPrimeofX = expValues
-        xNPrimeofX = xNPrimeofX * inv_sqrt_2xPI
+        xNPrimeofX = xNPrimeofX * Blackscholes.inv_sqrt_2xPI
 
         xK2 = 0.2316419 * xInput
         xK2 = 1.0 + xK2
@@ -92,8 +93,8 @@ class Blackscholes:
         xRiskFreeRate = rate
         xVolatility = volatility
         xTime = time
-        xSqrtTime = Math.sqrt(xTime)        
-        logValues = Math.log( sptprice / strike )        
+        xSqrtTime = math.sqrt(xTime)        
+        logValues = math.log( sptprice / strike )        
         xLogTerm = logValues        
         xPowerTerm = xVolatility * xVolatility
         xPowerTerm = xPowerTerm * 0.5		
@@ -107,7 +108,7 @@ class Blackscholes:
         d2 = xD2        
         NofXd1 = Blackscholes.CNDF( d1 )
         NofXd2 = Blackscholes.CNDF( d2 )        
-        FutureValueX = strike * ( Math.exp( -(rate)*(time) ) )
+        FutureValueX = strike * ( math.exp( -(rate)*(time) ) )
         if otype == 0:
             OptionPrice = (sptprice * NofXd1) - (FutureValueX * NofXd2)
 	else:
@@ -122,7 +123,7 @@ class Blackscholes:
         data = ShMem.s_state.get('data')
         results = ShMem.s_state.get('results')
         num_threads = ShMem.s_state.get('num_threads')
-        start = (node_number - 1) * (float(len(data)) / float(num_threads))
+        start = (node_number - 1) * (len(data) / num_threads)
         end = start + len(data) / num_threads
         
         for i in range(start, end):
@@ -132,7 +133,7 @@ class Blackscholes:
             r = cur_data['r']
             v = cur_data['v']
             t = cur_data['t']
-            otype = int(cur_data['OptionType'])
+            otype = ord(cur_data['OptionType'][0])
             
             price = Blackscholes.BlkSchlsEqEuroNoDiv(s, strike, r, v, t, otype,
                                                      0)
@@ -160,10 +161,12 @@ class Blackscholes:
         else:
             # Get the state and range from the master. 
             ShMem.Acquire(0)
-            process(node_id)
+            print ShMem.s_state
+            Blackscholes.process(node_id)
     
             # Send results to master. 
             ShMem.Release(0)
+            while 1:pass
 
     @staticmethod
     def writeResults():
@@ -175,17 +178,18 @@ class Blackscholes:
 def main():
     
     # Read arguments from sys.argv
-    Blackscholes.s_nThreads = int(sys.argv[1])
-    Blackscholes.s_numOptions = int(sys.argv[2])
-    Blackscholes.s_node_id = int(sys.argv[3])
-    Blackscholes.s_output_file = "output.txt"
+    Blackscholes.s_node_id = int(sys.argv[1])
+    Blackscholes.s_nThreads = int(sys.argv[2])
+    Blackscholes.s_numOptions = int(sys.argv[3])
     Blackscholes.s_values = []
-    
-    ShMem.init()
+    Blackscholes.inv_sqrt_2xPI = 0.39894228040143270286
+    input_file = open(sys.argv[4], 'r')
+    ShMem.init(input_file, Blackscholes.s_node_id)
+    input_file.close()
     ShMem.start()
-    Blackscholes.process(Blackscholes.s_node_id)
-    if Blackscholes.s_node_id == 0:
-        Blackscholes.writeResults()
+    Blackscholes.runParallel(sys.argv[5], 
+                             Blackscholes.s_node_id,
+                             Blackscholes.s_nThreads)
     
 if __name__ == '__main__':
     main()

@@ -2,7 +2,7 @@ from ShMemObject import *
 from ShMemAcquirer import *
 from ShMemReleaser import *
 from timestamp_util import *
-from ConcurrentQueue import *
+from Queue import *
 
 # Static fields:
 # s_addresses		-- Pairs of (IP, port) on which remote procs live.
@@ -20,9 +20,8 @@ class ShMem:
     @staticmethod
     def populate_addresses(input_file):
         ret = {}
-        ins = open(input_file, "r")
         counter = 0
-        for line in ins:
+        for line in input_file:
             parts = line.split(' ')
             listen_port = int(parts[1])
             ret[counter] = (parts[0], listen_port)
@@ -33,25 +32,25 @@ class ShMem:
     # but before the call to start are not shipped to other nodes. We do this
     # so that all nodes can potentially start with the same initial state. 
     @staticmethod
-    def init(address_book, my_id):
+    def init(input_file, my_id):
         ShMem.s_index = my_id
         
         # Get the address of each node. 
-        ShMem.s_addresses = ShMem.populate_addresses(address_book)
+        ShMem.s_addresses = ShMem.populate_addresses(input_file)
         Timestamp.init(len(ShMem.s_addresses), my_id)
         ShMemObject.s_now = Timestamp.CreateZero()
         ShMem.s_state = ShMemObject()
 
         # Initialize a single send queue which we'll use to communicate with
         # an ShMemReleaser thread. 
-        ShMem.s_send_queue = ConcurrentQueue()
+        ShMem.s_send_queue = Queue()
 
         # Initialize a set of receive queues which the ShMemAcquirer thread will
         # use to put recieved state.
         ShMem.s_receive_queues = {}
         for i in range(0, len(ShMem.s_addresses)):
             if i != my_id:
-                ShMem.s_receive_queues[i] = ConcurrentQueue()
+                ShMem.s_receive_queues[i] = Queue()
         
     # Once this function is called, all changes made to s_state are tracked
     # and sent as part of this diffing process. 
@@ -59,16 +58,27 @@ class ShMem:
     def start():
         ip, port = ShMem.s_addresses[ShMem.s_index]
         total_nodes = len(ShMem.s_addresses)
-        #ShMem.s_acquirer = ShMemAcquirer(port, ShMem.s_index, total_nodes)
-        #ShMem.s_releaser = ShMemReleaser(ShMem.s_index, ShMem.s_send_queue)
+        ShMem.s_acquirer = ShMemAcquirer(port, 
+                                         ShMem.s_index, 
+                                         ShMem.s_receive_queues)
+
+
+        ShMem.s_releaser = ShMemReleaser(ShMem.s_index, ShMem.s_send_queue,
+                                         ShMem.s_addresses)
+
+        # Keep a dictionary of the last time we synced with a remote node. 
+        ShMem.s_last_sync = {}
+        for i in range(0, total_nodes):
+            ShMem.s_last_sync[i] = Timestamp.CreateZero()
+        
         Timestamp.LocalIncrement(ShMemObject.s_now)
         
     # Merge s_state with the state we've received from a remote node. 
     @staticmethod
     def Acquire(node):
-        delta = ShMem.s_receive_queues[node].dequeue()
-        s_state.merge(delta)
-        Timestamp.Copy(ShMem.s_now, ShMem.s_last_sync[node])
+        delta = ShMem.s_receive_queues[node].get(True)
+        ShMem.s_state.merge(delta)
+        Timestamp.Copy(ShMemObject.s_now, ShMem.s_last_sync[node])
         ShMem.s_last_sync[node] = copy.deepcopy(ShMemObject.s_now)
         Timestamp.LocalIncrement(ShMemObject.s_now)
 
@@ -78,7 +88,7 @@ class ShMem:
     def Release(node):
         last_sync = ShMem.s_last_sync[node]
         cur_delta = ShMem.s_state.get_diffs(last_sync)
-        Timestamp.Copy(ShMem.s_now, last_sync)
+        Timestamp.Copy(ShMemObject.s_now, last_sync)
         ShMem.s_releaser.send(node, cur_delta)
         
         

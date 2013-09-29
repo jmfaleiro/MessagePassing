@@ -1,7 +1,7 @@
 import socket
 import json
 import thread
-import ConcurrentQueue
+from Queue import *
 import ShMem
 
 # Instance fields:
@@ -11,30 +11,31 @@ import ShMem
 # m_sock		-- Socket used by the sending thread. 
 class ShMemReleaser:
     
-    def __init__(self, my_id, queue):
+    def __init__(self, my_id, queue, addresses):
         self.m_send_queue = queue
         self.m_id = my_id
-        lock = threading.RLock()
-        self.m_condition = threading.condition
-        self.m_sock = socket.sock(socket.AF_INSET, socket.SOCK_STREAM)
-        thread.start_new_thread(self.run())
+        self.m_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.m_addresses = addresses
+        thread.start_new_thread(ShMemReleaser.run, (self,))
 
     # The thread running this method sends data asynchronously to other
     # processes. 
-    def run(self):
+    @staticmethod
+    def run(me):
         while True:
 
             # Get the item we want to send. 
-            item = self.m_send_queue.dequeue()            
+            print 'here'
+            item = me.m_send_queue.get(True)
             to_send = item['obj']
-            address = ShMem.address_book[item['to']]
+            address = me.m_addresses[item['to']]
             
             # Open a connection to the acquirer and send the data.
-            self.m_sock.connect(address)            
-            if self.m_sock.sendall(to_send) != None:
+            me.m_sock.connect(address)            
+            if me.m_sock.sendall(to_send) != None:
                 print "Send error!\n"
                 sys.exit(0)            
-            self.m_sock.close()            
+            me.m_sock.close()            
             
     # This method is called by the application to enqueue data to send
     # in the send queue.
@@ -43,9 +44,9 @@ class ShMemReleaser:
         # Serialize what we want to send.
         to_send = {}
         to_send['argument'] = state
-        to_send['releaser'] = my_id
+        to_send['releaser'] = self.m_id
         
         # Keep track of the receiver and put the object in a queue of objects
         # we want to send. 
         send_obj = {'to' : receiver, 'obj' : json.dumps(to_send)}
-        self.m_send_queue.append(send_obj)
+        self.m_send_queue.put(send_obj, True)
