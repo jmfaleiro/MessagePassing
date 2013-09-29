@@ -143,7 +143,7 @@ public class ShMem {
 		}
 		
     	BufferedReader file = new BufferedReader(reader);
-    	
+    	int node_num = 0;
     	while (true) {
     		
     		String file_line = null;
@@ -160,13 +160,12 @@ public class ShMem {
     		}
     		
     		String parts[] = file_line.split(" ");
-    		int node_num = -1;
+    		
     		int port = -1;
     		
     		try {
     			
-    			node_num = Integer.parseInt(parts[0]); 
-    			port = Integer.parseInt(parts[2]);
+    			port = Integer.parseInt(parts[1]);
     		}
     		catch(NumberFormatException e) {
     			e.printStackTrace();
@@ -174,8 +173,10 @@ public class ShMem {
     		}
     		
     		if (node_num != -1 && port != -1) {
-    			addresses.put(node_num, Pair.of(parts[1],  port));
+    			addresses.put(node_num, Pair.of(parts[0],  port));
     		}
+    		
+    		node_num += 1;
     	}
 	}
 
