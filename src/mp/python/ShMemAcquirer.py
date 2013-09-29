@@ -33,19 +33,21 @@ class ShMemAcquirer:
 
             # Receive the message from the client. 
             while 1:
-                chunk = clientsocket.recv()
+                chunk = clientsocket.recv(4096)
             
                 # We've received the entire message. 
                 if len(chunk) == 0:
                     break
                 else:
                     msg += chunk
-                
+
+            # Close the resource. 
+            clientsocket.close()
+
             # Do some deserialization. 
-            recvd_obj = json.load(msg)
-            serialized_msg = recvd_obj['argument']
+            recvd_obj = json.loads(msg)
+            msg = recvd_obj['argument']
             sender = recvd_obj['releaser']                
-            msg = json.load(serialized_msg)            
             
             # Put the recieved state into the right receive queue. 
             self.m_recvd_objs[sender].enqueue(msg)
