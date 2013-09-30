@@ -1,43 +1,58 @@
 package archivist;
 
-import mp.*;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.*;
 
-import org.json.simple.*;
+import mp.java.*;
 
-public class SourceAggregator implements IProcess {
+public class SourceAggregator {
 
-	public void process() {
+	public static void process() {
 		
-		// We expect that the caller will give us only new tweets. 
-		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		ShMemObject vals = (ShMemObject)ShMem.state.get("source-aggregate"); 
-		
-		for (Object obj : tweets) {
+		int next_tweet = 0;
+		String next_tweet_string;
+		while (true) {
 			
-			JSONObject tweet = (JSONObject)obj;
-			String source_string = new String((String)tweet.get("source"));
-			
-			source_string.replaceAll("\\.com/&quot", "\\.com&quot");
-			int count = 0;
-			if (vals.containsKey(source_string)) {
-				count = (Integer)vals.get(source_string);
-			}
-			++count;
 			try {
-				vals.put(source_string,  count);
+				ShMem.Acquire(0);
 			}
-			catch(Exception e) {
+			catch (ShMemObject.MergeException e) {
+				System.out.println(e);
+				System.out.println("Merge exception!");
 				System.exit(-1);
 			}
+			
+			// We expect that the caller will give us only new tweets. 
+			ArrayNode tweets = (ArrayNode)ShMem.s_state.get("tweets");
+			ShMemObject vals = (ShMemObject)ShMem.s_state.get("source-aggregate"); 
+			
+			int num_tweets = tweets.size();
+			while (next_tweet != num_tweets - 1) {
+				next_tweet_string = String.valueOf(next_tweet);
+				JsonNode cur_tweet = tweets.get(next_tweet_string);
+				String source_string = cur_tweet.get("source").getTextValue();
+				
+				JsonNode count_wrapper = vals.get(source_string);
+				if (count_wrapper != null) {
+					vals.put(source_string,  count_wrapper.getIntValue()+1);
+				}
+				
+				else {
+					vals.put(source_string, 1);
+				}
+				
+				next_tweet += 1;
+			}
+			
+			ShMem.Release(0);
 		}
 	}
 	
 	public static void main(String [] args) {
 		
-	
-		IProcess source_agg_proc = new SourceAggregator();
-		ShMemAcquirer s = new ShMemAcquirer(source_agg_proc, 1);
-		s.start();
+		ShMem.Init(Integer.parseInt(args[0]));
+		ShMem.Start();
+		SourceAggregator.process();
 	}
 	
 }

@@ -1,39 +1,48 @@
 package archivist;
 
-import org.json.simple.*;
+import org.codehaus.jackson.JsonNode;
 
-import mp.*;
+import mp.java.ShMem;
+import mp.java.ShMemObject;
 
-public class RetweetAggregator implements IProcess {
+public class RetweetAggregator {
 
-	public void process() {
-		
-		// We expect that the caller will give us only new tweets. 
-		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		long old_count = (Long)ShMem.state.get("retweet-aggregate");
-		long count = 0;
-		
-		for (Object obj : tweets) {
+	public static void process() {
+		int next_tweet = 0;
+		String next_tweet_string;
+		while (true) {
 			
-			String tweet_text = (String)((JSONObject)obj).get("text");
-			if (tweet_text.toUpperCase().contains("RT @"))
-				++count;
-		}
-		
-		count += old_count;
-		try {
-			ShMem.state.put("retweet-aggregate",  count);
-		}
-		catch(Exception e) {
-			System.exit(-1);
+			try {
+			ShMem.Acquire(0);
+			}
+			catch (ShMemObject.MergeException e) {
+				e.printStackTrace(System.err);
+				System.out.println("Merge failed!");
+				System.exit(-1);
+			}
+			
+			JsonNode tweets = ShMem.s_state.get("tweets");
+			int old_count = ShMem.s_state.get("retweet-aggregate").getIntValue();
+			
+			int num_tweets = tweets.size();
+			while (next_tweet < num_tweets) {
+				next_tweet_string = String.valueOf(next_tweet);
+				String tweet_text = tweets.get(next_tweet_string).get("text").getTextValue();
+				if (tweet_text.contains("RT @")) {
+					old_count += 1;
+				}
+				next_tweet += 1;
+			}
+			
+			ShMem.s_state.put("retweet-aggregate",  old_count);
+			ShMem.Release(0);
 		}
 	}
 	
 	public static void main(String [] args) {
 		
-		
-		IProcess rt_agg_proc = new RetweetAggregator();
-		ShMemAcquirer s = new ShMemAcquirer(rt_agg_proc, 0);
-		s.start();
+		ShMem.Init(Integer.parseInt(args[0]));
+		ShMem.Start();
+		RetweetAggregator.process();
 	}
 }

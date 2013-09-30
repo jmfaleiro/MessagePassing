@@ -5,10 +5,10 @@ import twitter4j.conf.ConfigurationBuilder;
 
 import java.util.*;
 
-import org.json.simple.*;
-import org.json.simple.parser.*;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 
-import mp.*;
+import mp.java.*;
 
 public class Appender {
 	
@@ -35,19 +35,19 @@ public class Appender {
 		
 	}
 	
-	@SuppressWarnings("unchecked")
-	public int Search() throws TwitterException, ParseException, ShMemFailure {
+	public int Search() throws TwitterException {
+		String next_tweet_string;
+		int next_tweet = 0;
 		
+		ObjectMapper mapper = new ObjectMapper();
 		
-		JSONArray tweets = new JSONArray();
-		
+		ShMemObject tweets = new ShMemObject();
 		Query query = new Query(query_string);
 		query.setCount(100);
 		query.setSinceId(this.since_id);
 		QueryResult result;
 		
 		int i = 0;
-		
 		do {
 			if (i >= pages)
 				break;
@@ -65,12 +65,15 @@ public class Appender {
 				String tweet_string = s.getText();
 				String source_string = s.getSource();
 				
-				JSONObject cur_tweet = new JSONObject();
+				ObjectNode cur_tweet = mapper.createObjectNode();
 				cur_tweet.put("created_at",  date_string);
 				cur_tweet.put("user",  user_string);
 				cur_tweet.put("text",  tweet_string);
 				cur_tweet.put("source", source_string);
-				tweets.add(cur_tweet);
+				
+				next_tweet_string = String.valueOf(next_tweet);
+				tweets.put(next_tweet_string, cur_tweet);
+				next_tweet += 1;
 			}
 			++i;
 			
@@ -78,64 +81,36 @@ public class Appender {
 	
 		
 		// Add dummy state for volume and user aggregations to use. 
+		ShMem.s_state.put("volume-aggregate",  new ShMemObject());
+		ShMem.s_state.put("word-aggregate",  new ShMemObject());
+		ShMem.s_state.put("user-aggregate",  new ShMemObject());
+		ShMem.s_state.put("url-aggregate",  new ShMemObject());
+		ShMem.s_state.put("source-aggregate", new ShMemObject());
+		ShMem.s_state.put("retweet-aggregate",  0);
+		ShMem.s_state.put("tweets", tweets);
+		ShMem.s_state.put("search_term",  query_string);
 		
-		ShMem.state.put("volume-aggregate",  new ShMemObject());
+		for (i = 1; i < 7; ++i) {
+			ShMem.Release(i);
+		}
 		
-		
-		ShMem.state.put("word-aggregate",  new ShMemObject());
-		
-		
-		ShMem.state.put("user-aggregate",  new ShMemObject());
-		ShMem.state.put("url-aggregate",  new ShMemObject());
-		
-		
-		ShMem.state.put("source-aggregate", new ShMemObject());
-		ShMem.state.put("retweet-aggregate",  0);
-		ShMem.state.put("tweets", tweets);
-		ShMem.state.put("search_term",  query_string);
-		
-		ShMem retweet_aggregation = ShMem.fork(0);
-		ShMem source_aggregation = ShMem.fork(1);
-		ShMem url_aggregation = ShMem.fork(2);
-		
-		ShMem user_aggregation = ShMem.fork(3);
-		
-		ShMem volume_aggregation = ShMem.fork(4);
-		ShMem word_aggregation = ShMem.fork(5); 
-		
-		retweet_aggregation.join();
-		
-		
-		source_aggregation.join();
-		
-
-		url_aggregation.join();
-		
-		
-		user_aggregation.join();
-		
-		volume_aggregation.join();
-		
-		
-		word_aggregation.join();
-		
-		
-		
-		/*
-		int len = versioned_state.size();
-		JSONObject vol = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("volume-aggregate");
-		JSONObject use = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("user-aggregate");
-		JSONObject words = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("word-aggregate");
-		JSONObject urls = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("url-aggregate");
-		JSONObject sources = (JSONObject)((JSONObject)versioned_state.get(len-1)).get("source-aggregate");
-		long rt_count = (Long)((JSONObject)versioned_state.get(len-1)).get("retweet-aggregate");
-		*/
+		for (i = 1; i < 7; ++i) {
+			try {
+				ShMem.Acquire(i);
+			}
+			catch (ShMemObject.MergeException e) {
+				e.printStackTrace(System.err);
+				System.out.println("Merge failed!");
+				System.exit(-1);
+			}
+		}
 		return 0;
 	}
 	
 	
-	public static void main(String [] args) throws ShMemFailure, ParseException, TwitterException{
-		
+	public static void main(String [] args) throws TwitterException {
+		ShMem.Init(Integer.parseInt(args[0]));
+		ShMem.Start();
 		Appender blah;
 		
 		blah = new Appender("xbox"); 

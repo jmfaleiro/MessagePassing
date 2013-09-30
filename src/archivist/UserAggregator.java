@@ -1,49 +1,53 @@
 package archivist;
 
-import org.json.simple.*;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
 
-import mp.*;
+import mp.java.*;
 
-public class UserAggregator implements IProcess {
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public void process() {
-		
+public class UserAggregator {
 	
-		// We expect that the caller will give us only new tweets. 
-		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		ShMemObject vals = (ShMemObject)ShMem.state.get("user-aggregate");
-		
-		for (Object obj : tweets) {
-			
-			// Extract the date from the tweet
-			JSONObject tweet = (JSONObject)obj;
-			String username = (String)tweet.get("user");
-			
-			int count = 0;
-			
-			// If the date is already in the dictionary, then get its value.
-			if (vals.containsKey(username)) {
-				count = (java.lang.Integer)vals.get(username);
-			}
-			
-			// Increment count and add it to the dictionary.
-			++count;
+	public static void process() {
+		int next_tweet = 0;
+		String next_tweet_string;
+		while (true) {
 			try {
-			vals.put(username, count);
+				ShMem.Acquire(0);
 			}
-			catch(Exception e) {
+			catch (ShMemObject.MergeException e) {
+				System.out.println("Merge failed!");
+				e.printStackTrace(System.err);
 				System.exit(-1);
 			}
+			
+			// We expect that the caller will give us only new tweets. 
+			ArrayNode tweets = (ArrayNode)ShMem.s_state.get("tweets");
+			ShMemObject vals = (ShMemObject)ShMem.s_state.get("user-aggregate");
+			
+			int tweet_count = tweets.size();
+			while (next_tweet != tweet_count) {
+				next_tweet_string = String.valueOf(next_tweet);
+				JsonNode tweet = tweets.get(next_tweet_string);
+				String username = tweet.get("user").getTextValue();
+				
+				JsonNode count_wrapper = vals.get(username);
+				if (count_wrapper != null) {
+					vals.put(username,  count_wrapper.getIntValue()+1);
+				}
+				else {
+					vals.put(username, 1);
+				}
+				
+				next_tweet += 1;
+			}
+			ShMem.Release(0);
 		}
 	}
 	
 	public static void main(String [] args) {
 		
-		
-		IProcess user_agg_proc = new UserAggregator();
-		ShMemAcquirer s = new ShMemAcquirer(user_agg_proc, 3);
-		s.start();
+		ShMem.Init(Integer.parseInt(args[0]));
+		ShMem.Start();
+		UserAggregator.process();
 	}
 }

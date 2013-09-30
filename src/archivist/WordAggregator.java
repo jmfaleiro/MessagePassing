@@ -2,11 +2,11 @@ package archivist;
 
 import java.util.*;
 
-import mp.*;
+import mp.java.*;
 
-import org.json.simple.*;
+import org.codehaus.jackson.JsonNode;
 
-public class WordAggregator implements IProcess{
+public class WordAggregator {
 	
 	
 
@@ -33,7 +33,7 @@ public class WordAggregator implements IProcess{
     						   "year", "you", "your", "was" };
     
     
-    private List<String> get_excludes(String search_term) {
+    private static List<String> get_excludes(String search_term) {
     	
     	List<String >exclude_words = new ArrayList<String>();
     	
@@ -53,10 +53,10 @@ public class WordAggregator implements IProcess{
     	return exclude_words;
     }
     
-    @SuppressWarnings("unchecked")
-	private void process_tweet(ShMemObject container, 
-							   String tweet_text,
-							   List<String> exclude_words) {
+    
+	private static void process_tweet(ShMemObject container, 
+							   		  String tweet_text,
+							   		  List<String> exclude_words) {
     	
     	tweet_text = tweet_text.toUpperCase();
 		tweet_text = tweet_text.replace("#", "");
@@ -72,47 +72,53 @@ public class WordAggregator implements IProcess{
 				!tweet_pieces[i].startsWith("@") &&
 				!tweet_pieces[i].startsWith("HTTP://")) {
 				
-				int count = 0;
-				if (container.containsKey(tweet_pieces[i])) {
-					count = (Integer)container.get(tweet_pieces[i]);
+				JsonNode count_wrapper = container.get(tweet_pieces[i]);
+				if (count_wrapper != null) {
+					container.put(tweet_pieces[i],  count_wrapper.getIntValue()+1);
 				}
-				++count;
-				
-				try {
-					container.put(tweet_pieces[i],  count);
-				}
-				catch (Exception e) {
-					System.exit(-1);
+				else {
+					container.put(tweet_pieces[i],  1);
 				}
 			}
 		}
     }
 	
-	@SuppressWarnings("unchecked")
-	@Override
-	public void process() {
-		
-		String search_term = (String)ShMem.state.get("search_term");
-		// We expect that the caller will give us only new tweets. 
-		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		ShMemObject vals = (ShMemObject)ShMem.state.get("word-aggregate");
-		
-		List<String> exclude_words = get_excludes(search_term);
-		
-		
-		for (Object obj : tweets) {
+	public static void process() {
+		int next_tweet = 0;
+		String next_tweet_string;
+		List<String> exclude_words = null;
+		while (true) {
+			try {
+				ShMem.Acquire(0);
+			}
+			catch (ShMemObject.MergeException e) {
+				e.printStackTrace(System.err);
+				System.out.println("Merge failed!");
+				System.exit(-1);
+			}
 			
-			// Extract tweet text and sanitize it. 
-			JSONObject tweet = (JSONObject)obj;
-			String tweet_text = (String)tweet.get("text");
-			process_tweet(vals, tweet_text, exclude_words);
+			String search_term = ShMem.s_state.get("search_term").getTextValue();
+			JsonNode tweets = ShMem.s_state.get("tweets");
+			ShMemObject vals = (ShMemObject)ShMem.s_state.get("word-aggregate");
+			if (exclude_words == null) {
+				exclude_words = get_excludes(search_term);
+			}
+			
+			int num_tweets = tweets.size();
+			while(next_tweet != num_tweets) {
+				next_tweet_string = String.valueOf(next_tweet);
+				JsonNode tweet = tweets.get(next_tweet_string);
+				String tweet_text = tweet.get("text").getTextValue();
+				process_tweet(vals, tweet_text, exclude_words);
+				next_tweet += 1;
+			}
+			ShMem.Release(0);
 		}
 	}
 	
 	public static void main(String [] args) {
-		
-		IProcess word_agg_proc = new WordAggregator();
-		ShMemAcquirer s = new ShMemAcquirer(word_agg_proc, 5);
-		s.start();
+		ShMem.Init(Integer.parseInt(args[0]));
+		ShMem.Start();
+		WordAggregator.process();
 	}
 }

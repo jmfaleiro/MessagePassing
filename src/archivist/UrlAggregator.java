@@ -1,14 +1,17 @@
 package archivist;
 
-import org.json.simple.*;
+
 
 import java.util.*;
 
-import mp.*;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
 
-public class UrlAggregator implements IProcess {
+import mp.java.*;
 
-	private List<String> get_urls(String tweet_text) {
+public class UrlAggregator {
+
+	private static List<String> get_urls(String tweet_text) {
 		
 		List<String> ret = new ArrayList<String>();
 		String[] parts = tweet_text.split(" ");
@@ -22,40 +25,47 @@ public class UrlAggregator implements IProcess {
 		return ret;
 	}
 	
-	public void process() {
+	public static void process() {
 		
-		JSONArray tweets = (JSONArray)ShMem.state.get("tweets");
-		ShMemObject vals = (ShMemObject)ShMem.state.get("url-aggregate");
-		
-		for (Object obj : tweets) {
-			
-			String tweet_text = new String((String)((JSONObject)obj).get("text"));
-			tweet_text = tweet_text.toUpperCase();
-			List<String> tweet_urls = get_urls(tweet_text);
-			
-			for (String url : tweet_urls) {
-				
-				int count = 0;
-				if (vals.containsKey(url)) {
-					count = (Integer)vals.get(url);
-				}
-				
-				++count;
-				try {
-					vals.put(url,  count);
-				}
-				catch(Exception e) {
-					System.exit(-1);
-				}
+		int next_tweet = 0;
+		String next_tweet_string;
+		while (true) {
+			try {
+			ShMem.Acquire(0);
 			}
+			catch (ShMemObject.MergeException e) {
+				e.printStackTrace(System.err);
+				System.out.println("Merge failed!");
+				System.exit(-1);
+			}
+			
+			ArrayNode tweets = (ArrayNode)ShMem.s_state.get("tweets");
+			ShMemObject vals = (ShMemObject)ShMem.s_state.get("url-aggregate");
+			int num_tweets = tweets.size();
+			
+			while (next_tweet != num_tweets) {
+				next_tweet_string = String.valueOf(next_tweet);
+				JsonNode tweet = tweets.get(next_tweet_string);
+				String tweet_text = tweet.get("text").getTextValue().toUpperCase();
+				List<String> tweet_urls = get_urls(tweet_text);
+				for (String url : tweet_urls) {
+					JsonNode count_wrapper = vals.get(url);
+					if (count_wrapper != null) {
+						vals.put(url,  count_wrapper.getIntValue()+1);
+					}
+					else {
+						vals.put(url,  1);
+					}
+				}
+				next_tweet += 1;
+			}
+			ShMem.Release(0);
 		}
 	}
 	
 	public static void main(String [] args) {
-		
-		
-		IProcess url_agg_proc = new UrlAggregator();
-		ShMemAcquirer s = new ShMemAcquirer(url_agg_proc, 2);
-		s.start();
+		ShMem.Init(Integer.parseInt(args[0]));
+		ShMem.Start();
+		UrlAggregator.process();
 	}
 }
