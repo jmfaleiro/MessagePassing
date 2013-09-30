@@ -1,4 +1,4 @@
-package archivist;
+package archivist.kirigami.java;
 
 import twitter4j.*;
 import twitter4j.conf.ConfigurationBuilder;

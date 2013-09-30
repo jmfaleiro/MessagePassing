@@ -1,11 +1,10 @@
-package archivist;
+package archivist.kirigami.java;
 
 
 
 import java.util.*;
 
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.node.ArrayNode;
 
 import mp.java.*;
 
@@ -39,7 +38,7 @@ public class UrlAggregator {
 				System.exit(-1);
 			}
 			
-			ArrayNode tweets = (ArrayNode)ShMem.s_state.get("tweets");
+			JsonNode tweets = ShMem.s_state.get("tweets");
 			ShMemObject vals = (ShMemObject)ShMem.s_state.get("url-aggregate");
 			int num_tweets = tweets.size();
 			

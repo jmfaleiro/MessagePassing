@@ -1,4 +1,4 @@
-package archivist;
+package archivist.kirigami.java;
 
 import org.codehaus.jackson.JsonNode;
 
