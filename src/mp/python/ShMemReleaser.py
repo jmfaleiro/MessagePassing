@@ -25,7 +25,6 @@ class ShMemReleaser:
         while True:
 
             # Get the item we want to send. 
-            print 'here'
             item = me.m_send_queue.get(True)
             to_send = item['obj']
             address = me.m_addresses[item['to']]

@@ -19,7 +19,6 @@ class ShMemAcquirer:
         print self.m_port
         # Create a new thread to run the server. 
         thread.start_new_thread(ShMemAcquirer.run, (self,))
-        print 'here'
     
     # The actual server logic. 
     @staticmethod
