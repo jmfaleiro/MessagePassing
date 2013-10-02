@@ -92,7 +92,9 @@ class ShMemTest(unittest.TestCase):
     # Initialize an ShMemObject with a set of keys and timestamps so that we 
     # can test our diff-n-merge code. 
     def standardInit(self):
-        ShMem.init('test_file.txt', 0)
+        file_var = open('test_file.txt', 'r')
+        ShMem.init(file_var, 0)
+        file_var.close()
         ShMem.start()
         
         first_obj = ShMemObject()
@@ -181,7 +183,9 @@ class ShMemTest(unittest.TestCase):
         
     # Test gets and puts into an ShMemObject. 
     def testPutGet(self):
-        ShMem.init('test_file.txt', 0)        
+        file_var = open('test_file.txt', 'r')
+        ShMem.init(file_var, 0)       
+        file_var.close()
         ShMem.start()
         self.assertEqual(ShMemObject.s_now, [1,0,0,0])
 
