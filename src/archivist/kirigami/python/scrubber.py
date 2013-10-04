@@ -70,8 +70,16 @@ print 'done'
 print
 print
 
-timestamp = Timestamp.CreateZero()
-print tree.get_diffs(timestamp)
+print tree.get_plain_diffs()
+
+tweets = ShMemObject()
+tweets2 = ShMemObject()
+tweets2.put_simple("fool","this is weak")
+tweets.put_object("weak",tweets2)
+	    
+print tweets.get_plain_diffs()
+
+
 
 """
 class UrlAggregator:
