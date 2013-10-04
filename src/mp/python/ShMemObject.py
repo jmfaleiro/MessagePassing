@@ -103,6 +103,26 @@ class ShMemObject:
             else:
                 self.do_recursive_insert(other_key, wrapped_value)
             
+    # Print state as a plain dictionary without timestamp junk.
+    def get_plain_diffs(self):
+        ret = {}
+        # Iterate through all the keys in the current ShMemObject
+        for key,value in self.m_values.iteritems():
+
+            # Get the timestamp of the current key-value pair.
+            # If the timestamp is greater than 'timestamp' then we need to add
+            # the value to the diff tree.             
+                
+                # If the value is itself an ShMemObject, then recursively
+                # fetch the parts of the object that were changed after
+                # 'timestamp'. Otherwise, we just fetch the leaf. 
+            if isinstance(value, ShMemObject):
+                serialized_value = value.get_plain_diffs()
+            else:
+                serialized_value = value
+            ret[key] = serialized_value        
+        return ret
+
         
     # Get the diffs of this ShMemObject which correspond to a time
     # later than the arugment 'timestamp'. It retuns an object which can 
