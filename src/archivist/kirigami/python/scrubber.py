@@ -16,73 +16,8 @@ tweets = ShMemObject()
 
 tree = ShMem.s_state
 
-counter = 0
-val = {}
-val["weak"] = "code"
-
-tweets.put_simple(str(counter),val)
-x = tweets.get(str(0))
-print x
-
-def getInfos(currentDir):
-    infos = []
-    
-    dirQ = []
-
-    # os.path.join(dirpath, name)
-
-    for root, dirs, files in os.walk(currentDir): # Walk directory tree, goes once round loop for each "level" in directory tree
-	#print root
-	#print dirs
-	currShMem = tree
-	for d in dirs:
-	    direc = ShMemObject()
-	    # add ShMem object 
-	    currShMem.put_object(d,direc)
-	    print "dir " + d
-	    # add shmem object for this dir to queue
-	    dirQ += [direc]
-
-	counter = 0
-
-	#print files
-        for f in files:
-	    print "files " + f
-	    val = {}
-	    currShMem.put_simple(f,val)
-	    counter = counter + 1
-
-            #infos.append(root + f)
-     	    """
-            file_bytes = open(root + f, 'rb')
-	    file_val = ''
-	    for byte in file_bytes:
-	      file_val += byte
-	    print file_val
-	    """
-	if len(dirQ) > 0:
-	    currShMem = dirQ.pop()
-
-    print dirQ
-    return infos
-
 # takes a directory and returns an Shmem object representing that directory
 def dir2shmem(currentDir):
-    print currentDir
-    # the shmemobject that we will return
-    
-
-    # base case - is it a file?
-    if os.path.isfile(currentDir):
-	# this is a file
-	# make a new ShMem object of just this file
-	# TODO: EVENTUALLY VAL SHOULD BE THE FILE BINARY!!!!
-	#print "returning " + str([currentDir])
-	shmem = ShMemObject()
-	shmem.put_simple(currentDir,'')	
-	return shmem
-
-    # else we have a directory, have to recurse
 
     #files = [ f for f in listdir(currentDir) if isfile(join(currentDir,f)) ]
     #print files
@@ -98,7 +33,10 @@ def dir2shmem(currentDir):
 	    a = currentDir + '/' + a
 	else:
 	    a = currentDir + a
-	result.put_object(a,dir2shmem(a))
+	if isfile(a):
+	    result.put_simple(a,'')
+	else:
+	    result.put_object(a,dir2shmem(a))
 	#result = result + [dir2shmem(a)]
 	#print "returning " + str(result)
     return result
@@ -117,14 +55,14 @@ print 'done'
 print
 print
 
-print tree.get_plain_diffs()
+tree.get_plain_diffs()
 
 tweets = ShMemObject()
 tweets2 = ShMemObject()
 tweets2.put_simple("fool","this is weak")
 tweets.put_object("weak",tweets2)
 	    
-print tweets.get_plain_diffs()
+tweets.get_plain_diffs()
 
 
 
