@@ -52,7 +52,12 @@ def dir2shmem(currentDir):
 #print x
 #print os.path.abspath('../')
 #constshmem = dir2shmem(os.path.abspath('../'))
-print "result " + str(dir2shmem('./').get_plain_diffs())
+output = dir2shmem('./')
+
+
+
+tree.put_object('0',output)
+print "result " + str(tree.get_plain_diffs())
 print
 
 # print constshmem.get_plain_diffs()
