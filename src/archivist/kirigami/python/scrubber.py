@@ -5,6 +5,9 @@ from ShMemObject import *
 from ShMem import *
 from timestamp_util import *
 
+from os import listdir
+from os.path import isfile, join
+
 test_file = open('test.txt', 'r')
 ShMem.init(test_file, 0)
 ShMem.start()
@@ -63,8 +66,48 @@ def getInfos(currentDir):
     print dirQ
     return infos
 
-x = getInfos('../')
-print x
+# takes a directory and returns an Shmem object representing that directory
+def dir2shmem(currentDir):
+    print currentDir
+    # the shmemobject that we will return
+    shmem = ShMemObject()
+
+    # base case - is it a file?
+    if os.path.isfile(currentDir):
+	# this is a file
+	# make a new ShMem object of just this file
+	# TODO: EVENTUALLY VAL SHOULD BE THE FILE BINARY!!!!
+	#print "returning " + str([currentDir])
+	return [currentDir]
+
+    # else we have a directory, have to recurse
+
+    #files = [ f for f in listdir(currentDir) if isfile(join(currentDir,f)) ]
+    #print files
+
+    allindir = os.listdir(currentDir)
+    #print allindir
+    result = [currentDir]
+    #dirs = list(set(allindir) - set(files))
+    for a in allindir:
+	if currentDir != './' and currentDir != '../':
+	    a = currentDir + '/' + a
+	else:
+	    a = currentDir + a
+
+	result = result + [dir2shmem(a)]
+	#print "returning " + str(result)
+    return result
+
+#x = getInfos('../')
+#print x
+#print os.path.abspath('../')
+#constshmem = dir2shmem(os.path.abspath('../'))
+print "result " + str(dir2shmem('./'))
+print
+
+# print constshmem.get_plain_diffs()
+
 
 print 'done'
 print
