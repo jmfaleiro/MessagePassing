@@ -18,7 +18,6 @@ tree = ShMem.s_state
 
 # takes a directory and returns an Shmem object representing that directory
 def dir2shmem(currentDir):
-
     #files = [ f for f in listdir(currentDir) if isfile(join(currentDir,f)) ]
     #print files
 
@@ -34,14 +33,22 @@ def dir2shmem(currentDir):
 	else:
 	    a = currentDir + a
 	if isfile(a):
-	    result.put_simple(a,'')
+	    f = open(a,'rb')
+	    bytes = ''
+	    for byte in f:
+		bytes += byte
+	    f.close()
+	    #g = open(a + 'weak','wb')
+	    #g.write(bytes)
+	    #g.close()
+	    result.put_simple(a,bytes)
 	else:
 	    result.put_object(a,dir2shmem(a))
 	#result = result + [dir2shmem(a)]
 	#print "returning " + str(result)
     return result
 
-#x = getInfos('../')
+#x = getInfos('./')
 #print x
 #print os.path.abspath('../')
 #constshmem = dir2shmem(os.path.abspath('../'))
