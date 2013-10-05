@@ -70,7 +70,7 @@ def getInfos(currentDir):
 def dir2shmem(currentDir):
     print currentDir
     # the shmemobject that we will return
-    shmem = ShMemObject()
+    
 
     # base case - is it a file?
     if os.path.isfile(currentDir):
@@ -78,7 +78,9 @@ def dir2shmem(currentDir):
 	# make a new ShMem object of just this file
 	# TODO: EVENTUALLY VAL SHOULD BE THE FILE BINARY!!!!
 	#print "returning " + str([currentDir])
-	return [currentDir]
+	shmem = ShMemObject()
+	shmem.put_simple(currentDir,'')	
+	return shmem
 
     # else we have a directory, have to recurse
 
@@ -87,15 +89,17 @@ def dir2shmem(currentDir):
 
     allindir = os.listdir(currentDir)
     #print allindir
-    result = [currentDir]
+    #result = [currentDir]
     #dirs = list(set(allindir) - set(files))
+    result = ShMemObject()
+
     for a in allindir:
 	if currentDir != './' and currentDir != '../':
 	    a = currentDir + '/' + a
 	else:
 	    a = currentDir + a
-
-	result = result + [dir2shmem(a)]
+	result.put_object(a,dir2shmem(a))
+	#result = result + [dir2shmem(a)]
 	#print "returning " + str(result)
     return result
 
@@ -103,7 +107,7 @@ def dir2shmem(currentDir):
 #print x
 #print os.path.abspath('../')
 #constshmem = dir2shmem(os.path.abspath('../'))
-print "result " + str(dir2shmem('./'))
+print "result " + str(dir2shmem('./').get_plain_diffs())
 print
 
 # print constshmem.get_plain_diffs()
