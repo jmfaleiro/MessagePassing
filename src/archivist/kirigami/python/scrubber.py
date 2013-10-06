@@ -5,6 +5,9 @@ from ShMemObject import *
 from ShMem import *
 from timestamp_util import *
 
+from os import listdir
+from os.path import isfile, join
+
 test_file = open('test.txt', 'r')
 ShMem.init(test_file, 0)
 ShMem.start()
@@ -13,65 +16,69 @@ tweets = ShMemObject()
 
 tree = ShMem.s_state
 
-counter = 0
-val = {}
-val["weak"] = "code"
+# takes a directory and returns an Shmem object representing that directory
+def dir2shmem(currentDir):
+    #files = [ f for f in listdir(currentDir) if isfile(join(currentDir,f)) ]
+    #print files
 
-tweets.put_simple(str(counter),val)
-x = tweets.get(str(0))
-print x
+    allindir = os.listdir(currentDir)
+    #print allindir
+    #result = [currentDir]
+    #dirs = list(set(allindir) - set(files))
+    result = ShMemObject()
 
-def getInfos(currentDir):
-    infos = []
-    
-    dirQ = []
+    for a in allindir:
+	if currentDir != './' and currentDir != '../':
+	    a = currentDir + '/' + a
+	else:
+	    a = currentDir + a
+	if isfile(a):
+	    f = open(a,'rb')
+	    bytes = ''
+	    for byte in f:
+		bytes += byte
+	    f.close()
+	    #g = open(a + 'weak','wb')
+	    #g.write(bytes)
+	    #g.close()
+	    result.put_simple(a,bytes)
+	else:
+	    result.put_object(a,dir2shmem(a))
+	#result = result + [dir2shmem(a)]
+	#print "returning " + str(result)
+    return result
 
-    # os.path.join(dirpath, name)
+#x = getInfos('./')
+#print x
+#print os.path.abspath('../')
+#constshmem = dir2shmem(os.path.abspath('../'))
+output = dir2shmem('./')
 
-    for root, dirs, files in os.walk(currentDir): # Walk directory tree, goes once round loop for each "level" in directory tree
-	#print root
-	#print dirs
-	currShMem = tree
-	for d in dirs:
-	    direc = ShMemObject()
-	    # add ShMem object 
-	    currShMem.put_object(d,direc)
-	    print "dir " + d
-	    # add shmem object for this dir to queue
-	    dirQ += [direc]
 
-	counter = 0
 
-	#print files
-        for f in files:
-	    print "files " + f
-	    val = {}
-	    currShMem.put_simple(f,val)
-	    counter = counter + 1
+tree.put_object('0',output)
+print "result " + str(tree.get_plain_diffs())
+print
 
-            #infos.append(root + f)
-     	    """
-            file_bytes = open(root + f, 'rb')
-	    file_val = ''
-	    for byte in file_bytes:
-	      file_val += byte
-	    print file_val
-	    """
-	if len(dirQ) > 0:
-	    currShMem = dirQ.pop()
+# print constshmem.get_plain_diffs()
 
-    print dirQ
-    return infos
-
-x = getInfos('../')
-print x
 
 print 'done'
 print
 print
 
-timestamp = Timestamp.CreateZero()
-print tree.get_diffs(timestamp)
+tree.get_plain_diffs()
+ShMem.Release(1)
+while 1:pass
+
+tweets = ShMemObject()
+tweets2 = ShMemObject()
+tweets2.put_simple("fool","this is weak")
+tweets.put_object("weak",tweets2)
+	    
+tweets.get_plain_diffs()
+
+
 
 """
 class UrlAggregator:
