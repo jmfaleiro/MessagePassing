@@ -20,6 +20,9 @@ class Blackscholes:
         input_file = open(input_file, "r")
         for line in input_file:
             parts = line.split(' ')
+            if len(parts) < 5:
+                continue
+
             data_value = {}
 
             data_value['s'] = float(parts[0])
@@ -144,8 +147,8 @@ class Blackscholes:
     @staticmethod
     def runParallel(input_file, node_id, total_nodes):
         if node_id == 0:
-            parse_opitons(ShMem.s_state, input_file)
-            ShMem.s_state.put('num_threads', total_nodes-1)
+            Blackscholes.parseOptions(ShMem.s_state, input_file)
+            ShMem.s_state.put_simple('num_threads', total_nodes-1)
 
             # Dispatch work to worker processes. 
             for i in range(1, total_nodes):
@@ -156,8 +159,10 @@ class Blackscholes:
                 ShMem.Acquire(i)
 
             result_objs = ShMem.s_state.get('results')
+            print result_objs
             for i in range(i, Blackscholes.s_numOptions):
-                Blackscholes.s_values[i] = result_objs.get(str(i))
+                print result_objs.get(str(i))
+                Blackscholes.s_values.append(result_objs.get(str(i)))
         else:
             # Get the state and range from the master. 
             ShMem.Acquire(0)
