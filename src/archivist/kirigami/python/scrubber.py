@@ -68,6 +68,8 @@ print
 print
 
 tree.get_plain_diffs()
+ShMem.Release(1)
+while 1:pass
 
 tweets = ShMemObject()
 tweets2 = ShMemObject()
