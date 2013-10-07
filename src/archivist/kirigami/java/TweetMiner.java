@@ -46,11 +46,8 @@ public class TweetMiner {
 		query.setSinceId(m_since_id);
 		QueryResult result;
 		
-		int i = 0;
 		
 		do {
-			if (i >= s_pages)
-				break;
 			
 			result = m_twitter.search(query);
 			List<Status> temp = result.getTweets();
@@ -76,7 +73,6 @@ public class TweetMiner {
 				tweet_count += 1;
 				
 			}
-			++i;
 			System.out.println("here!");
 		} while((query = result.nextQuery()) != null);
 		
@@ -94,7 +90,7 @@ public class TweetMiner {
 			miner = new TweetMiner(args[0]);
 			while (miner.tweet_count < 10000000) {
 				miner.Search();
-				Thread.sleep(10*60000);
+				Thread.sleep(10*30000);
 			}
 		}
 		catch (Exception e) {
