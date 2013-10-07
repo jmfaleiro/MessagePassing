@@ -43,6 +43,15 @@
   </jar>
 </target>
 
+<target name="run-miner" depends="miner">
+  <java fork="true" classname="archivist.kirigami.java.TweetMiner">
+    <classpath>
+      <path refid="classpath"/>
+      <path location="${jar.dir}/miner.jar"/>
+    </classpath>
+  </java>
+</target>
+
 <target name="compile_delaunay" depends="compile_lib,compile_common">
   <mkdir dir="build/classes"/>
   <javac srcdir="${delaunay.dir}" destdir="${classes.dir}" classpathref="classpath"/>

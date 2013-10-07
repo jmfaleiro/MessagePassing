@@ -76,7 +76,8 @@ public class TweetMiner {
 				tweet_count += 1;
 				
 			}
-			
+			++i;
+			System.out.println("here!");
 		} while((query = result.nextQuery()) != null);
 		
 		m_output_stream.flush();
@@ -86,9 +87,23 @@ public class TweetMiner {
 		m_output_stream.close();
 	}
 	
-	public static void main(String[] args) throws TwitterException, FileNotFoundException{
-		TweetMiner miner = new TweetMiner(args[0]);
-		miner.Search();
-		miner.close();
+	
+	public static void main(String[] args) {
+		TweetMiner miner = null;
+		try{
+			miner = new TweetMiner(args[0]);
+			while (miner.tweet_count < 10000000) {
+				miner.Search();
+				Thread.sleep(10*60000);
+			}
+		}
+		catch (Exception e) {
+			
+		}
+		finally {
+			if (miner != null) {
+				miner.close();
+			}
+		}
 	}
 }
