@@ -41,7 +41,9 @@ def dir2shmem(currentDir):
 	    #g = open(a + 'weak','wb')
 	    #g.write(bytes)
 	    #g.close()
-	    result.put_simple(a,bytes)
+
+	    # CHANGE THIS TO WRITE FILE BYTES TO SHMEM OBJECT
+	    result.put_simple(a, bytes)
 	else:
 	    result.put_object(a,dir2shmem(a))
 	#result = result + [dir2shmem(a)]
@@ -69,8 +71,20 @@ print
 
 tree.get_plain_diffs()
 ShMem.Release(1)
+
+
+
+
+
+
+
+
 while 1:pass
 
+
+
+
+"""
 tweets = ShMemObject()
 tweets2 = ShMemObject()
 tweets2.put_simple("fool","this is weak")
@@ -80,7 +94,7 @@ tweets.get_plain_diffs()
 
 
 
-"""
+
 class UrlAggregator:
     
     @staticmethod
