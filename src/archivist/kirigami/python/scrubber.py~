@@ -88,9 +88,6 @@ def writefiles(shmem):
 		# write to file
 		key2 = key.replace('./','')
 		filename = 'out/' + key2
-		if not os.path.exists(filename):
-    			os.makedirs(filename)
-
 		g = open(filename,'wb')
     		g.write(base64.b64decode(value))
     		g.close()
