@@ -91,15 +91,22 @@ class ShMemObject:
                 my_value = self.m_values[other_key]
                 comp = Timestamp.CompareTimestamps(my_timestamp, 
                                                    other_timestamp)
-                
-                
-                # Both have written to the same node. Try to merge, if we fail
-                # then an exception gets automatically thrown. 
-                # XXX: We need to change this for the future. 
-                if comp == Comparison.NONE:
-                    my_value.merge(other_value)
-                elif comp == Comparison.LESS_THAN:
-                    self.do_recursive_insert(other_key, wrapped_value)
+
+                # Check if either one of the values is a leaf node, if so,
+                # then this is the time to check for conflicting changes. 
+                if not isinstance(my_value, ShMemObject) or not isinstance(other_value, dict):
+
+                    if comp == Comparison.NONE:
+                        print 'Merge failure!'
+                        my_value.merge(other_value)
+                    
+                    if comp == Comparison.LESS_THAN:
+                        self.do_recursive_insert(other_key, wrapped_value)
+                    
+                # Neither of them are leaf nodes. 
+                else:
+                    if comp != Comparison.BIGGER_THAN:
+                        my_value.merge(other_value)
             else:
                 self.do_recursive_insert(other_key, wrapped_value)
             
