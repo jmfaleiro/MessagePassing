@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys,os
+import sys,os,base64
 sys.path.append('../../../mp/python/')
 from ShMemObject import *
 from ShMem import *
@@ -33,12 +33,12 @@ def findfiles(shmem):
 		# check if this worker should clean it (depends on filetype)
 		if key.endswith('.pdf'):
 			# write to file
-			filename = 'temp/' + key
-			g = open(filename,'wb')
-	    		g.write(bytes)
+			filename = key
+			g = open('weak-test.pdf','wb')
+	    		g.write(base64.b64decode(value))
 	    		g.close()
 			# clean the file
-			os.system('../../../../../mat/mat ' + filename)
+			#os.system('../../../../../mat/mat ' + filename)
 
 			# then read file back into shmem object
                 	ret[key] = value

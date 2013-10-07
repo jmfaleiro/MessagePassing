@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys,os
+import sys,os,base64
 sys.path.append('../../../mp/python/')
 from ShMemObject import *
 from ShMem import *
@@ -34,10 +34,19 @@ def dir2shmem(currentDir):
 	    a = currentDir + a
 	if isfile(a):
 	    f = open(a,'rb')
-	    bytes = ''
-	    for byte in f:
-		bytes += byte
-	    f.close()
+	    bytes = f.read()
+
+	    #bytes = []
+	    #for byte in f:
+		
+	    #	bytes = bytes + [byte]
+
+	    #f.close()
+	    
+	    bytes = base64.b64encode(bytes)
+    	    
+	    #bytes = ReadFile(b64file)
+	    
 	    #g = open(a + 'weak','wb')
 	    #g.write(bytes)
 	    #g.close()
