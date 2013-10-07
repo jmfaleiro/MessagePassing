@@ -23,8 +23,9 @@ shin = tree.get('0')
 def findfiles(shmem):
         ret = {}
         # Iterate through all the keys in the current ShMemObject
-        for key,value in shmem.m_values.iteritems():
+        for key in shmem.getKeys():
 	    isfile = 'false'
+            value = shmem.get(key)
             if isinstance(value, ShMemObject):
 		# directory
                 ret[key] = findfiles(value)
@@ -45,7 +46,7 @@ def findfiles(shmem):
 	      	        bytes = base64.b64encode(bytes)
 	    		g.close()
 			# update the value for that key in shmem
-			# shmem.put_simple(key,bytes)
+			shmem.put_simple(key,bytes)
 
 			# then read file back into shmem object
                 	ret[key] = value
