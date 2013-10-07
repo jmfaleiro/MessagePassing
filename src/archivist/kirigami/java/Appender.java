@@ -31,8 +31,6 @@ public class Appender {
 		this.query_string = query_string;
 		
 		twitter = new TwitterFactory(cb.build()).getInstance();
-		
-		
 	}
 	
 	public int Search() throws TwitterException {

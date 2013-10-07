@@ -1,5 +1,6 @@
 import socket
 import json
+from base64 import b64encode
 import thread
 from Queue import *
 import ShMem

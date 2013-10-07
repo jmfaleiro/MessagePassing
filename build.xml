@@ -4,6 +4,7 @@
 <property name="src.dir" value="src" />
 <property name="build.dir" value="build"/>
 <property name="shmem.dir" value="${src.dir}/mp/java"/>
+<property name="archivist.dir" value="${src.dir}/archivist/kirigami/java"/>
 <property name="common.dir" value="${src.dir}/common/util"/>
 <property name="delaunay.dir" value="${src.dir}/DelaunayRefinement/src/java"/>
 <property name="classes.dir" value="${build.dir}/classes"/>
@@ -26,6 +27,20 @@
 <target name="compile_lib">
   <mkdir dir="build/classes"/>
   <javac srcdir="${shmem.dir}" destdir="${classes.dir}" classpathref="classpath"/>
+</target>
+
+<target name="compile_miner" depends="compile_lib">
+  <mkdir dir="build/classes"/>
+  <javac srcdir="${archivist.dir}" destdir="${classes.dir}" classpathref="classpath"/>
+</target>
+
+<target name="miner" depends="compile_miner">
+  <mkdir dir="${jar.dir}" />
+  <jar destfile="${jar.dir}/miner.jar" basedir="build/classes">
+    <manifest>
+      <attribute name="Main-Class" value="archivist.kirigami.java.TweetMiner" />
+    </manifest>
+  </jar>
 </target>
 
 <target name="compile_delaunay" depends="compile_lib,compile_common">
