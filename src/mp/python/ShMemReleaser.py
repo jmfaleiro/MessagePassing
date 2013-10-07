@@ -14,7 +14,6 @@ class ShMemReleaser:
     def __init__(self, my_id, queue, addresses):
         self.m_send_queue = queue
         self.m_id = my_id
-        self.m_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.m_addresses = addresses
         thread.start_new_thread(ShMemReleaser.run, (self,))
 
@@ -28,13 +27,25 @@ class ShMemReleaser:
             item = me.m_send_queue.get(True)
             to_send = item['obj']
             address = me.m_addresses[item['to']]
+            not_sent = True
+
+            while not_sent:
+                # Open a connection to the acquirer and send the data.
+                my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                try:
+                    my_socket.connect(address)
+                except IOError:     
+                    # XXX: Should add some back-off here!
+                    #print 'here!'
+                    my_socket.close()
+                    continue
+
+                if my_socket.sendall(to_send) != None:
+                    print "Send error!\n"
+                    sys.exit(0)            
+                my_socket.close()            
+                not_sent = False
             
-            # Open a connection to the acquirer and send the data.
-            me.m_sock.connect(address)            
-            if me.m_sock.sendall(to_send) != None:
-                print "Send error!\n"
-                sys.exit(0)            
-            me.m_sock.close()            
             
     # This method is called by the application to enqueue data to send
     # in the send queue.
