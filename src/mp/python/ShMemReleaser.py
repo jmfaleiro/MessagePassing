@@ -58,5 +58,5 @@ class ShMemReleaser:
         
         # Keep track of the receiver and put the object in a queue of objects
         # we want to send. 
-        send_obj = {'to' : receiver, 'obj' : json.dumps(to_send, False, False)}
+        send_obj = {'to' : receiver, 'obj' : json.dumps(to_send)}
         self.m_send_queue.put(send_obj, True)
