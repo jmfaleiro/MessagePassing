@@ -93,7 +93,7 @@ public class TweetMiner {
 				}
 			}
 			catch(Exception e) {
-				continue;
+				e.printStackTrace(System.out);
 			}
 		}
 	}
