@@ -83,23 +83,31 @@ public class TweetMiner {
 		m_output_stream.close();
 	}
 	
+	public static void Iterator(TweetMiner miner)
+	{
+		while (true) {
+			try {
+				while (miner.tweet_count < 10000000) {
+					miner.Search();
+					Thread.sleep(10*30000);
+				}
+			}
+			catch(Exception e) {
+				continue;
+			}
+		}
+	}
 	
 	public static void main(String[] args) {
 		TweetMiner miner = null;
-		try{
+		try {
 			miner = new TweetMiner(args[0]);
-			while (miner.tweet_count < 10000000) {
-				miner.Search();
-				Thread.sleep(10*30000);
-			}
 		}
-		catch (Exception e) {
-			
+		catch(Exception e) {
+			System.out.println("failed!");
+			System.exit(-1);
 		}
-		finally {
-			if (miner != null) {
-				miner.close();
-			}
-		}
+		Iterator(miner);
+		miner.close();
 	}
 }
