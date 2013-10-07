@@ -44,6 +44,9 @@ class ShMemObject:
         self.m_values[key] = value
         self.m_timestamps[key] = copy.deepcopy(ShMemObject.s_now)
         ShMemObject.fixTime(self, ShMemObject.s_now)
+    
+    def getKeys(self):
+        return self.m_values.keys()
 
     # Getter for a given key
     def get(self, key):
