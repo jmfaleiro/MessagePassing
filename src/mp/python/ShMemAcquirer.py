@@ -47,7 +47,7 @@ class ShMemAcquirer:
             # Close the resource. 
             clientsocket.close()
             # Do some deserialization. 
-            recvd_obj = json.loads(msg)
+            recvd_obj = json.loads(msg, 'utf-8')
             msg = recvd_obj['argument']
             sender = recvd_obj['releaser']  
  
