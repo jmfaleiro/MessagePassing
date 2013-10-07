@@ -94,6 +94,12 @@ public class TweetMiner {
 			}
 			catch(Exception e) {
 				e.printStackTrace(System.out);
+				try {
+					Thread.sleep(10*60000);
+				}
+				catch (InterruptedException exct) {
+					
+				}
 			}
 		}
 	}
