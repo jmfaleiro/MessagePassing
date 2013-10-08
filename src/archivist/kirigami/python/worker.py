@@ -46,12 +46,12 @@ def findfiles(shmem):
 	      	        bytes = base64.b64encode(bytes)
 	    		g.close()
 			# update the value for that key in shmem
-			shmem.put_simple("key.png", bytes)
+			# shmem.put_simple("./key.png", bytes)
 			shmem.put_simple(key, bytes)
 
 
 			# delete the temporary file
-			# os.system('rm weak-test.png')
+			os.system('rm weak-test.png')
 
 			# then read file back into shmem object
                 	ret[key] = value

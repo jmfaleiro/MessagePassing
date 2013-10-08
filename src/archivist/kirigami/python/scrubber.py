@@ -114,7 +114,7 @@ shin = tree.get('0')
 writefiles(shin)
 
 print
-print shin.get_plain_diffs()
+#print shin.get_plain_diffs()
 
 print "done"
 
