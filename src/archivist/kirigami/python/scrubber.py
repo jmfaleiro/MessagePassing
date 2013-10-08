@@ -88,8 +88,20 @@ def writefiles(shmem):
 		# write to file
 		key2 = key.replace('./','')
 		filename = 'out/' + key2
-		if not os.path.exists(filename):
-    			os.makedirs(filename)
+
+		# check if is a directory
+		if key2.count('/') > 0 :
+			# is a directory
+			# find the directory path
+			key3 = key2[:key2.rfind('/')]
+			# make the directory
+			dirname = 'out/' + key3
+			if not os.path.exists(dirname):
+	    			os.makedirs(dirname)
+
+			
+			print key + ' ' + 'dir'
+
 
 		g = open(filename,'wb')
     		g.write(base64.b64decode(value))
