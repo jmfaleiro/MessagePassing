@@ -52,7 +52,7 @@ def findfiles(shmem):
 			#shmem.put_simple(key, bytes)
 
 			# shmem doesn't work, shin does work???? dunno why?????
-			shmem.put_simple('./dirty-test' + key + '.png', bytes)
+			shmem.put_simple(key, bytes)
 
 
 			# delete the temporary file
