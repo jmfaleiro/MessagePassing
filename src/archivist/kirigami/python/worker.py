@@ -40,7 +40,7 @@ def findfiles(shmem):
 	    		g.close()
 			# clean the file
 			print "attempting to clean: " + filename
-			os.system('../../../../../mat/mat ' + filename)
+			os.system('../mat/mat ' + filename)
 			
 			g = open(filename,'rb')
 	    		bytes = g.read()

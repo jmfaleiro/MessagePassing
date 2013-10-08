@@ -1,0 +1,8 @@
+include README README.security LICENSE mat mat-gui
+include TODO mat.desktop
+include mat.1 mat-gui.1
+recursive-include data *
+recursive-include MAT *.py
+recursive-include test *.py clean.* dirty.*
+recursive-include po *
+recursive-include nautilus *.py

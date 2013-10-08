@@ -1,4 +1,5 @@
 import copy
+import sys
 from timestamp_util import *
 
 
@@ -102,6 +103,7 @@ class ShMemObject:
                     if comp == Comparison.NONE:
                         print 'Merge failure!'
                         my_value.merge(other_value)
+                        sys.exit('Merge failure!')
                     
                     if comp == Comparison.LESS_THAN:
                         self.do_recursive_insert(other_key, wrapped_value)

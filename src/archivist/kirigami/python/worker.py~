@@ -9,7 +9,7 @@ from os import listdir
 from os.path import isfile, join
 
 test_file = open('test.txt', 'r')
-ShMem.init(test_file, 2)
+ShMem.init(test_file, 1)
 ShMem.start()
 test_file.close()
 
@@ -32,15 +32,15 @@ def findfiles(shmem):
             else:
 		# file
 		# check if this worker should clean it (depends on filetype)
-		if key.endswith('.' + sys.argv[1]):
+		if key.endswith('.png'):
 			# write to file
-			filename = 'weak-test.mp3'
+			filename = 'weak-test.png'
 			g = open(filename,'wb')
 	    		g.write(base64.b64decode(value))
 	    		g.close()
 			# clean the file
 			print "attempting to clean: " + filename
-			os.system('../mat/mat ' + filename)
+			os.system('../../../../../mat/mat ' + filename)
 			
 			g = open(filename,'rb')
 	    		bytes = g.read()
@@ -50,13 +50,11 @@ def findfiles(shmem):
 			# shmem.put_simple("./key.png", bytes)
 			print "cleaned: " + key
 			#shmem.put_simple(key, bytes)
-
-			# shmem doesn't work, shin does work???? dunno why?????
-			shmem.put_simple(key, bytes)
+			shmem.put_simple('./dirty-test' + key + '.png', bytes)
 
 
 			# delete the temporary file
-			os.system('rm weak-test.mp3')
+			os.system('rm weak-test.png')
 
 			# then read file back into shmem object
                 	ret[key] = value
