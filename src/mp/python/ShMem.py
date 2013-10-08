@@ -78,11 +78,28 @@ class ShMem:
     @staticmethod
     def Acquire(node):
         delta = ShMem.s_receive_queues[node].get(True)
-        print delta
+        print '\nBegin acquired! <<<<<<<<<\n'
+        print ShMem.rec_dict_keys(delta)
+        print '\nEnd acquired! >>>>>>>>>>>>\n'
         ShMem.s_state.merge(delta['value'])
         Timestamp.Union(ShMemObject.s_now, delta['time'])
         Timestamp.Union(ShMem.s_last_sync[node], delta['time'])
         Timestamp.LocalIncrement(ShMemObject.s_now)
+
+    @staticmethod
+    def rec_dict_keys(d):
+        ret = {}
+        for key,value in d.items():
+            if key == 'shmem_timestamp':
+                ret[key] = value
+                continue
+
+            if isinstance(value, dict):
+                ret[key] = ShMem.rec_dict_keys(value)
+            else:
+                ret[key] = ""
+        return ret
+            
 
     # Release our diffs to another node. Put it in the send queue for the
     # ShMemReleaser thread to get to. 
@@ -91,6 +108,12 @@ class ShMem:
         to_send = {}
         to_send['time'] = Timestamp.CreateCopy(ShMemObject.s_now)
         to_send['value'] = ShMem.s_state.get_diffs(ShMem.s_last_sync[node])
+
+        print '\nBegin release! <<<<<<<<<\n'
+        print ShMem.rec_dict_keys(to_send['value'])
+        print '\nEnd release! >>>>>>>>>>>>\n'
+
+
         Timestamp.Copy(ShMemObject.s_now, ShMem.s_last_sync[node])
         ShMem.s_releaser.send(node, to_send)
         Timestamp.LocalIncrement(ShMemObject.s_now)

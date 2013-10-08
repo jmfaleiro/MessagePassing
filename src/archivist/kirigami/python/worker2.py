@@ -62,7 +62,17 @@ def findfiles(shmem):
                 	ret[key] = value
 	        	print key
 
+print '\n<<<<<<<<<<<<<<<<<\n'
+print ShMem.rec_dict_keys(ShMemObject.get_diffs(ShMem.s_state, [0,0,0,0]))
+print '\n>>>>>>>>>>>>>>>>>\n'
+
 findfiles(shin)
+
+print '\n<<<<<<<<<<<<<<<<<\n'
+print ShMem.rec_dict_keys(ShMemObject.get_diffs(ShMem.s_state, [0,0,0,0]))
+print '\n>>>>>>>>>>>>>>>>>\n'
+
+
 
 ShMem.Release(0)
 

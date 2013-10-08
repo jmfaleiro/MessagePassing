@@ -26,7 +26,7 @@ class ShMemObject:
             cur_timestamp = cur.m_parent.m_timestamps[key]
             
             comp = Timestamp.CompareTimestamps(cur_timestamp, time)
-            if comp == Comparison.LESS_THAN:
+            if comp != Comparison.BIGGER_THAN:
                 Timestamp.Union(cur_timestamp, time)
                 cur = cur.m_parent
             else:
@@ -34,10 +34,9 @@ class ShMemObject:
 
     # This method is meant to be used when 'value' is an ShMemObject
     def put_object(self, key, value):
-        self.put_simple(key, value)
         value.m_parent = self
         value.m_parent_key = key
-        ShMemObject.fixTime(self, ShMemObject.s_now)
+        self.put_simple(key, value)
 
     # This method should be used when 'value' is a simple type, that is,
     # an array, int, double, string, byte[]. 
@@ -56,9 +55,11 @@ class ShMemObject:
     # Forcibly insert a key-value pair at the specified timestamp. We use
     # this method only while merging with a remote node's state. 
     def insertAt(self, key, value, timestamp):
-        Timestamp.Union(ShMemObject.s_now, timestamp)
         self.m_timestamps[key] = timestamp
         self.m_values[key] = value
+        if isinstance(value, ShMemObject):
+            value.m_parent = self
+            value.m_parent_key = key
         ShMemObject.fixTime(self, timestamp)
 
     @staticmethod
@@ -81,9 +82,6 @@ class ShMemObject:
     def do_recursive_insert(self, key, wrapped_value):
         to_insert = ShMemObject.deserializeObjectNode(wrapped_value['value'])
         self.insertAt(key, to_insert, wrapped_value['shmem_timestamp'])
-        if isinstance(to_insert, ShMemObject):
-            to_insert.m_parent = self
-            to_insert.m_parent_key = key
 
     def merge(self, obj):
         for other_key,wrapped_value in obj.iteritems():

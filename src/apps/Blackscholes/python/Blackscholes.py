@@ -171,7 +171,7 @@ class Blackscholes:
     
             # Send results to master. 
             ShMem.Release(0)
-            while 1:pass
+            #while 1:pass
 
     @staticmethod
     def writeResults():
