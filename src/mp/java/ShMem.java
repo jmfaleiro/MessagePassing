@@ -83,8 +83,8 @@ public class ShMem {
 		s_state = new ShMemObject();
 		
 		deltas_ = new DeltaStore();
-		//acquirer_ = new ShMemAcquirer(node_id, deltas_);
-		//releaser_ = new ShMemReleaser(node_id);
+		acquirer_ = new ShMemAcquirer(node_id, deltas_);
+		releaser_ = new ShMemReleaser(node_id);
 	}
 	
 	public static void Start() {
@@ -103,8 +103,9 @@ public class ShMem {
 		// - Change now_ appropriately.
 		// - Update last_sync_.
 		ObjectNode delta = deltas_.Pop(from);
-		s_state.merge(delta);
-		m_last_sync.put(from,  VectorTimestamp.Copy(ShMemObject.s_now));
+		s_state.merge(delta.get("value"));
+		VectorTimestamp.UnionWithSerialized(ShMemObject.s_now,  (ArrayNode)(delta.get("time")));
+		VectorTimestamp.UnionWithSerialized(since,  (ArrayNode)delta.get("time"));
 		VectorTimestamp.IncrementLocal(ShMemObject.s_now);
 	}
 	
@@ -118,12 +119,16 @@ public class ShMem {
 		// Extract the appropriate delta from state_ (all modifications to
 		// state since the last time we released to the process we're releasing
 		// to).
+		ObjectNode to_release = mapper.createObjectNode();
+		to_release.put("time",  VectorTimestamp.toArrayNode(ShMemObject.s_now));
 		ObjectNode cur_delta = null;
 		cur_delta = ShMemObject.get_diff_tree(s_state, last_sync);
 		assert(cur_delta != null);						// Make sure we have a valid delta. 
-		m_last_sync.put(to,  VectorTimestamp.Copy(ShMemObject.s_now));	// Deep copy timestamp.
+		to_release.put("value",  cur_delta);
+		VectorTimestamp.CopyFromTo(ShMemObject.s_now,  last_sync);
+		releaser_.Release(to,  to_release);				// Release (asynchronously). 
 		VectorTimestamp.IncrementLocal(ShMemObject.s_now);								// Increment time.
-		releaser_.Release(to,  cur_delta);				// Release (asynchronously). 
+		
 	}
 
 	

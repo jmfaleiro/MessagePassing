@@ -169,7 +169,7 @@ public class ShMemObject extends ObjectNode {
 		// The keys are sorted in timestamp order, so we can stop iterating
 		// so long as ts is less than the current node's timestamp. 
 		for (ListNode cur = obj.m_sorted_keys.m_head; 
-			 cur != null && VectorTimestamp.Compare(ts, cur.m_timestamp) == Comparison.LT;
+			 cur != null && VectorTimestamp.Compare(ts, cur.m_timestamp) != Comparison.GT;
 			 cur = cur.m_next) {
 			
 			// Create a wrapper which will contain the actual value and its

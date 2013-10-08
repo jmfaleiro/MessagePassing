@@ -84,9 +84,8 @@ public class WordAggregator {
     }
 	
 	public static void process() {
-		int next_tweet = 0;
-		String next_tweet_string;
 		List<String> exclude_words = null;
+		ShMem.Release(0);
 		while (true) {
 			try {
 				ShMem.Acquire(0);
@@ -104,13 +103,10 @@ public class WordAggregator {
 				exclude_words = get_excludes(search_term);
 			}
 			
-			int num_tweets = tweets.size();
-			while(next_tweet != num_tweets) {
-				next_tweet_string = String.valueOf(next_tweet);
-				JsonNode tweet = tweets.get(next_tweet_string);
+			for (int i = 0; i < tweets.size(); ++i) {
+				JsonNode tweet = tweets.get(i);
 				String tweet_text = tweet.get("text").getTextValue();
 				process_tweet(vals, tweet_text, exclude_words);
-				next_tweet += 1;
 			}
 			ShMem.Release(0);
 		}

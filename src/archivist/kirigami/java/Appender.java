@@ -44,8 +44,10 @@ public class Appender {
 		ObjectMapper mapper = new ObjectMapper();
 		ArrayNode epoch_tweets = mapper.createArrayNode();
 		
+		ShMem.s_state.put("search_term",  "manchester united");
+		ShMem.s_state.put("word-aggregate",  new ShMemObject());
 		try {
-			FileReader reader = new FileReader("test_cases/" + m_input_file);
+			FileReader reader = new FileReader(m_input_file);
 	    	@SuppressWarnings("resource")
 			BufferedReader file = new BufferedReader(reader);
 	    	
@@ -80,7 +82,7 @@ public class Appender {
 	public static void main(String [] args)  {
 		ShMem.Init(Integer.parseInt(args[0]));
 		ShMem.Start();
-		Appender blah = new Appender(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+		Appender blah = new Appender(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
 		blah.Process();
 	}
 }
