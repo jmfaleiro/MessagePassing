@@ -55,16 +55,17 @@ class ShMem:
     # Once this function is called, all changes made to s_state are tracked
     # and sent as part of this diffing process. 
     @staticmethod
-    def start():
+    def start(test=True):
         ip, port = ShMem.s_addresses[ShMem.s_index]
         total_nodes = len(ShMem.s_addresses)
-        ShMem.s_acquirer = ShMemAcquirer(port, 
-                                         ShMem.s_index, 
-                                         ShMem.s_receive_queues)
 
-
-        ShMem.s_releaser = ShMemReleaser(ShMem.s_index, ShMem.s_send_queue,
-                                         ShMem.s_addresses)
+        if test:
+            print 'here'
+            ShMem.s_acquirer = ShMemAcquirer(port, 
+                                             ShMem.s_index, 
+                                             ShMem.s_receive_queues)
+            ShMem.s_releaser = ShMemReleaser(ShMem.s_index, ShMem.s_send_queue,
+                                             ShMem.s_addresses)
 
         # Keep a dictionary of the last time we synced with a remote node. 
         ShMem.s_last_sync = {}

@@ -95,7 +95,7 @@ class ShMemTest(unittest.TestCase):
         file_var = open('test_file.txt', 'r')
         ShMem.init(file_var, 0)
         file_var.close()
-        ShMem.start()
+        ShMem.start(False)
         
         first_obj = ShMemObject()
         first_obj.put_simple('Yale', 'University')
@@ -135,21 +135,31 @@ class ShMemTest(unittest.TestCase):
                      'value' : 'faleiro'}}
         ShMem.s_state.merge(to_merge)
         faleiro = ShMem.s_state.get('jose')
+        college = ShMem.s_state.get('name').get('Yale')
+        print college
+        self.failUnless(college == 'University')
         self.failUnless(faleiro == 'faleiro')
         self.assertEqual(Timestamp.CompareTimestamps(ShMemObject.s_now,
                                                      [2,2,1,0]),
                          Comparison.EQUAL)
         
+        print ShMem.s_state.get_plain_diffs()
+
         # Leaf-leaf conflict but the timestamp of one subsumes the other. 
         # Shouldn't fail and the new timestamp should propagate to the root. 
         self.standardInit()
         to_merge = {'name' : 
                     {'shmem_timestamp': [2,2,1,0], 
                      'value': 
-                     {'Yale' : 
+                     {'fuck' :
+                          {'shmem_timestamp' : [2,2,1,0],
+                           'value' : 'you' },
+                    'Yale' : 
                       {'shmem_timestamp':[2,2,1,0],
                        'value' : 'College'}}}}
         ShMem.s_state.merge(to_merge)
+        
+        print ShMem.s_state.get_plain_diffs()
         self.assertEqual(Timestamp.CompareTimestamps(ShMemObject.s_now,
                                                      [2,2,1,0]),
                          Comparison.EQUAL)
@@ -186,7 +196,7 @@ class ShMemTest(unittest.TestCase):
         file_var = open('test_file.txt', 'r')
         ShMem.init(file_var, 0)       
         file_var.close()
-        ShMem.start()
+        ShMem.start(False)
         self.assertEqual(ShMemObject.s_now, [1,0,0,0])
 
         first_obj = ShMemObject()

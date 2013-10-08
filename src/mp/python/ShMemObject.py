@@ -108,8 +108,8 @@ class ShMemObject:
                     
                 # Neither of them are leaf nodes. 
                 else:
-                    #if comp != Comparison.BIGGER_THAN:
-                    my_value.merge(other_value)
+                    if comp != Comparison.BIGGER_THAN:
+                        my_value.merge(other_value)
             else:
                 self.do_recursive_insert(other_key, wrapped_value)
             
