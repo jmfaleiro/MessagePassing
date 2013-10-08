@@ -1,0 +1,111 @@
+<xml>
+    <format>
+        <name>Portable Network Graphics</name>
+        <extension>.png</extension>
+        <mimetype>image/png</mimetype>
+        <support>Full</support>
+        <metadata>Textual metadata and date</metadata>
+        <method>Removal of harmful fields with hachoir.</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Jpeg</name>
+        <extension>.jpeg, .jpg</extension>
+        <mimetype>image/jpeg</mimetype>
+        <support>Partial</support>
+        <metadata>Comments and exif/photoshop/adobe</metadata>
+        <method>Removal of harmful fields with hachoir.</method>
+        <remaining>Canon Raw tags</remaining>
+    </format>
+
+    <format>
+        <name>Open Document</name>
+        <extension>.odt, .odx, .ods, ...</extension>
+        <mimetype>application/opendocument</mimetype>
+        <support>Full</support>
+        <metadata>A meta.xml file</metadata>
+        <method>Removal of the meta.xml file.</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Office Openxml</name>
+        <extension>.docx, .pptx, .xlsx, ...</extension>
+        <mimetype>application/officeopenxml</mimetype>
+        <support>Full</support>
+        <metadata>A docProps folder containings xml metadata files.</metadata>
+        <method>Removal of the docProps folder</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Portable Document Fileformat</name>
+        <extension>.pdf</extension>
+        <mimetype>application/pdf</mimetype>
+        <support>Full</support>
+        <metadata>A lot</metadata>
+        <method>Rendering of the PDF file on a cairo surface with the help of poppler.</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Tape ARchive</name>
+        <extension>.tar, .tar.bz2, .tar.gz</extension>
+        <mimetype>application/x-tar, application/x-gzip, application/x-bzip2</mimetype>
+        <support>Full</support>
+        <metadata>Metadata from compressed files, metadata added to them by tar and metadata from the tar itself.</metadata>
+        <method>Extraction and processing of each file, creation of a new archive, processing of this archive.</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Zip</name>
+        <extension>.zip</extension>
+        <mimetype>application/zip</mimetype>
+        <support>Partial</support>
+        <metadata>Metadata from compressed files, metadata added to them by zip and metadata from the zip itself.</metadata>
+        <method>Extraction and processing of each file, creation of a new archive, processing of this archive.</method>
+        <remaining>Metadata added by zip itself to internal files</remaining>
+    </format>
+
+    <format>
+        <name>MPEG Audio</name>
+        <extension>.mp3, .mp2, .mp1, .mpa</extension>
+        <mimetype>audio/mpeg</mimetype>
+        <support>Full</support>
+        <metadata>Id3</metadata>
+        <method>Removal of harmful fields with hachoir</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Ogg Vorbis</name>
+        <extension>.ogg</extension>
+        <mimetype>audio/vorbis</mimetype>
+        <support>Full</support>
+        <metadata>Vorbis</metadata>
+        <method>Removal of harmful fields with mutagen</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Free Lossless Audio Codec</name>
+        <extension>.flac</extension>
+        <mimetype>audio/x-flac</mimetype>
+        <support>Full</support>
+        <metadata>Flac, Vorbis</metadata>
+        <method>Removal of harmful fields with mutagen</method>
+        <remaining>None</remaining>
+    </format>
+
+    <format>
+        <name>Torrent</name>
+        <extension>.torrent</extension>
+        <mimetype>application/torrent</mimetype>
+        <support>Full</support>
+        <metadata>Torrent specific metadata</metadata>
+        <method>Remove all the compromizing metadata with a heavily tuned version of the bencode lib by Petru Paled</method>
+        <remaining>None</remaining>
+    </format>
+</xml>

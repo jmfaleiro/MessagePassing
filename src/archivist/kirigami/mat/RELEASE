@@ -1,0 +1,29 @@
+update localisations using
+    xgettext -k_ -kN_ --from-code utf-8 -o ./po/mat-gui.pot mat-gui.py ./data/mat.glade
+
+update changelog:
+    git log -> CHANGELOG
+
+update version number:
+    MAT/mat.py -> __version__ = $VERSION
+
+commit release changes
+    git commit CHANGELOG MAT/mat.py
+
+create a tag
+    git tag -s $VERSION
+
+push the tag
+    git push --tags
+
+archive's creation :
+    git archive --format=tar.gz --prefix=mat-$VERSION/ $VERSION > mat-$VERSION.tar.gz
+
+signing:
+    gpg --armor --detach-sign mat-$VERSION.tar.gz
+
+upload:
+    https://mat.boum.org/files
+
+add changelog
+    https://mat.boum.org/
