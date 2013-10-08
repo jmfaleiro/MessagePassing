@@ -78,9 +78,9 @@ class ShMem:
     @staticmethod
     def Acquire(node):
         delta = ShMem.s_receive_queues[node].get(True)
-        print '\nBegin acquired! <<<<<<<<<\n'
-        print ShMem.rec_dict_keys(delta)
-        print '\nEnd acquired! >>>>>>>>>>>>\n'
+        #print '\nBegin acquired! <<<<<<<<<\n'
+        #print ShMem.rec_dict_keys(delta)
+        #print '\nEnd acquired! >>>>>>>>>>>>\n'
         ShMem.s_state.merge(delta['value'])
         Timestamp.Union(ShMemObject.s_now, delta['time'])
         Timestamp.Union(ShMem.s_last_sync[node], delta['time'])
@@ -109,9 +109,9 @@ class ShMem:
         to_send['time'] = Timestamp.CreateCopy(ShMemObject.s_now)
         to_send['value'] = ShMem.s_state.get_diffs(ShMem.s_last_sync[node])
 
-        print '\nBegin release! <<<<<<<<<\n'
-        print ShMem.rec_dict_keys(to_send['value'])
-        print '\nEnd release! >>>>>>>>>>>>\n'
+        #print '\nBegin release! <<<<<<<<<\n'
+        #print ShMem.rec_dict_keys(to_send['value'])
+        #print '\nEnd release! >>>>>>>>>>>>\n'
 
 
         Timestamp.Copy(ShMemObject.s_now, ShMem.s_last_sync[node])
