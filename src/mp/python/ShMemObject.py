@@ -25,7 +25,7 @@ class ShMemObject:
             cur_timestamp = cur.m_parent.m_timestamps[key]
             
             comp = Timestamp.CompareTimestamps(cur_timestamp, time)
-            if comp == Comparison.LESS_THAN:
+            if comp != Comparison.BIGGER_THAN:
                 Timestamp.Union(cur_timestamp, time)
                 cur = cur.m_parent
             else:
