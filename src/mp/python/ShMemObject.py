@@ -148,7 +148,7 @@ class ShMemObject:
             # the value to the diff tree.             
             cur_timestamp = self.m_timestamps[key]
             comp = Timestamp.CompareTimestamps(timestamp, cur_timestamp)
-            if comp == Comparison.LESS_THAN:
+            if comp != Comparison.BIGGER_THAN:
                 
                 # If the value is itself an ShMemObject, then recursively
                 # fetch the parts of the object that were changed after

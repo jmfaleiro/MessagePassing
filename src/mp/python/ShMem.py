@@ -78,9 +78,9 @@ class ShMem:
     @staticmethod
     def Acquire(node):
         delta = ShMem.s_receive_queues[node].get(True)
-        ShMem.s_state.merge(delta)
-        Timestamp.Copy(ShMemObject.s_now, ShMem.s_last_sync[node])
-        ShMem.s_last_sync[node] = copy.deepcopy(ShMemObject.s_now)
+        ShMem.s_state.merge(delta.get('value'))
+        Timestamp.Union(ShMemObject.s_now, delta.get('time'))
+        Timestamp.Union(ShMem.s_last_sync[node], delta.get('time'))
         Timestamp.LocalIncrement(ShMemObject.s_now)
 
     # Release our diffs to another node. Put it in the send queue for the
@@ -88,9 +88,11 @@ class ShMem:
     @staticmethod
     def Release(node):
         last_sync = ShMem.s_last_sync[node]
-        cur_delta = ShMem.s_state.get_diffs(last_sync)
+        to_send = {'time' : Timestamp.Copy(ShMemObject.s_now),
+                   'value' : ShMem.s_state.get_diffs(last_sync)}
         Timestamp.Copy(ShMemObject.s_now, last_sync)
-        ShMem.s_releaser.send(node, cur_delta)
+        ShMem.s_releaser.send(node, to_send)
+        Timestamp.LocalIncrement(ShMemObject.s_now)
         
         
         
