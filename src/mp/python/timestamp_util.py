@@ -31,7 +31,12 @@ class Timestamp:
         for i in range(0, Timestamp.s_size):
             to_vector[i] = from_vector[i]
 
-    
+    @staticmethod
+    def CreateCopy(vector):
+        ret = []
+        for i in range(0, Timestamp.s_size):
+            ret.append(vector[i])
+        return ret
 
     # Take the union of the vector timestamps to_union and with_union.
     # Put the results in to_union
