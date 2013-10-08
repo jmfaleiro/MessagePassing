@@ -88,10 +88,9 @@ class ShMem:
     # ShMemReleaser thread to get to. 
     @staticmethod
     def Release(node):
-        last_sync = ShMem.s_last_sync[node]
         to_send = {}
         to_send['time'] = Timestamp.CreateCopy(ShMemObject.s_now)
-        to_send['value'] = ShMem.s_state.get_diffs(last_sync)
-        Timestamp.Copy(ShMemObject.s_now, last_sync)
+        to_send['value'] = ShMem.s_state.get_diffs(ShMem.s_last_sync[node])
+        Timestamp.Copy(ShMemObject.s_now, ShMem.s_last_sync[node])
         ShMem.s_releaser.send(node, to_send)
         Timestamp.LocalIncrement(ShMemObject.s_now)
