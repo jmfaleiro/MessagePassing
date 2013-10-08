@@ -68,10 +68,13 @@ print
 tree.get_plain_diffs()
 ShMem.Release(1)
 
+ShMem.Release(2)
+
 # wait for workers to clean files
 print "waiting for workers...."
 
 ShMem.Acquire(1)
+ShMem.Acquire(2)
 
 print "writing clean files..."
 

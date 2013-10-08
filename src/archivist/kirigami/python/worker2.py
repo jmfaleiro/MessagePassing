@@ -9,7 +9,7 @@ from os import listdir
 from os.path import isfile, join
 
 test_file = open('test.txt', 'r')
-ShMem.init(test_file, 1)
+ShMem.init(test_file, 2)
 ShMem.start()
 test_file.close()
 
@@ -34,7 +34,7 @@ def findfiles(shmem):
 		# check if this worker should clean it (depends on filetype)
 		if key.endswith('.' + sys.argv[1]):
 			# write to file
-			filename = 'weak-test.png'
+			filename = 'weak-test.mp3'
 			g = open(filename,'wb')
 	    		g.write(base64.b64decode(value))
 	    		g.close()
@@ -56,7 +56,7 @@ def findfiles(shmem):
 
 
 			# delete the temporary file
-			os.system('rm weak-test.png')
+			os.system('rm weak-test.mp3')
 
 			# then read file back into shmem object
                 	ret[key] = value
