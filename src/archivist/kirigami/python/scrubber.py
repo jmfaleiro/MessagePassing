@@ -50,7 +50,7 @@ def dir2shmem(currentDir):
 #print x
 #print os.path.abspath('../')
 #constshmem = dir2shmem(os.path.abspath('../'))
-output = dir2shmem('testdir')
+output = dir2shmem('./')
 
 
 
