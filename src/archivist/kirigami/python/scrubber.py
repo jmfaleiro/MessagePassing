@@ -95,14 +95,14 @@ def writefiles(shmem):
 			# find the directory path
 			key3 = key2[:key2.rfind('/')]
 			# make the directory
-			dirname = 'out/' + key3
+			dirname = './out/' + key3
 			if not os.path.exists(dirname):
 	    			os.makedirs(dirname)
 
 			
 			print key + ' ' + 'dir'
 
-
+		print "writing to: " + filename
 		g = open(filename,'wb')
     		g.write(base64.b64decode(value))
     		g.close()

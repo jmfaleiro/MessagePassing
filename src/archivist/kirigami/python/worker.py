@@ -27,8 +27,8 @@ def findfiles(shmem):
 	    isfile = 'false'
             value = shmem.get(key)
             if isinstance(value, ShMemObject):
-		# directory
-                ret[key] = findfiles(value)
+		# directory, have to recurse
+                findfiles(value)
             else:
 		# file
 		# check if this worker should clean it (depends on filetype)
@@ -39,6 +39,7 @@ def findfiles(shmem):
 	    		g.write(base64.b64decode(value))
 	    		g.close()
 			# clean the file
+			print "attempting to clean: " + filename
 			os.system('../../../../../mat/mat ' + filename)
 			
 			g = open(filename,'rb')
@@ -47,7 +48,11 @@ def findfiles(shmem):
 	    		g.close()
 			# update the value for that key in shmem
 			# shmem.put_simple("./key.png", bytes)
-			shmem.put_simple(key, bytes)
+			print "cleaned: " + key
+			#shmem.put_simple(key, bytes)
+
+			# shmem doesn't work, shin does work???? dunno why?????
+			shmem.put_simple('./dirty-test' + key + '.png', bytes)
 
 
 			# delete the temporary file
@@ -56,8 +61,6 @@ def findfiles(shmem):
 			# then read file back into shmem object
                 	ret[key] = value
 	        	print key
-    
-        return ret
 
 findfiles(shin)
 
