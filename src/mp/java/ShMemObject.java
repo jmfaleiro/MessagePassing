@@ -143,7 +143,7 @@ public class ShMemObject extends ObjectNode {
 			String key = cur.parent_key;
 			int[] cur_timestamp = cur.parent.m_key_map.get(key).m_timestamp;
 			Comparison comp = VectorTimestamp.Compare(cur_timestamp,  time);
-			if (comp == Comparison.LT) {
+			if (comp != Comparison.GT) {
 				VectorTimestamp.Union(cur_timestamp,  time);
 				
 				ListNode cur_node = cur.parent.m_key_map.get(cur.parent_key);
