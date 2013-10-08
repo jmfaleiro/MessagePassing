@@ -83,8 +83,8 @@ public class ShMem {
 		s_state = new ShMemObject();
 		
 		deltas_ = new DeltaStore();
-		acquirer_ = new ShMemAcquirer(node_id, deltas_);
-		releaser_ = new ShMemReleaser(node_id);
+		//acquirer_ = new ShMemAcquirer(node_id, deltas_);
+		//releaser_ = new ShMemReleaser(node_id);
 	}
 	
 	public static void Start() {

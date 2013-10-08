@@ -404,44 +404,32 @@ public class ShMemObject extends ObjectNode {
 						VectorTimestamp.CompareWithSerializedTS(my_timestamp,  
 																other_timestamp);
 				
-				// Both have written to the same node.
-				if (comp == Comparison.NONE) {
-					if (other_value.isObject() && my_value.isObject()) {
-						((ShMemObject)my_value).merge(other_value);
-					}
-					else {
-						// We've just detected a write-write conflict. 
+				// If either one of these guys is a leaf, then this is the time that
+				// we have to check for conflicts. 
+				if (!(my_value instanceof ShMemObject) || (!other_value.isObject())) {
+					if (comp == Comparison.NONE) {
 						throw new MergeException("Merge exception!");
 					}
-				}
-				else if (comp == Comparison.LT) {
-					
-					// Just take the other guy's timestamp. 
-					VectorTimestamp.CopyFromSerializedTo(other_timestamp, my_timestamp); 
-							 
-					// Take the other guy's changes because we're subsumed. 
-					if (other_value.isObject()) {
-						ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);
-						this.InsertAt(key,  deserialized_value,  my_timestamp);
-						deserialized_value.parent = this;
-						deserialized_value.parent_key = key;
+					if (comp == Comparison.LT) {
+						int[] new_timestamp = VectorTimestamp.CopySerialized(other_timestamp);
+						if (other_value.isObject()) {
+							ShMemObject deserialized_value = DeserializeObjectNode((ObjectNode)other_value);
+							this.InsertAt(key, deserialized_value, new_timestamp);
+							deserialized_value.parent = this;
+							deserialized_value.parent_key = key;
+						}
+						else {
+							this.InsertAt(key, other_value, new_timestamp);
+						}
 					}
-					else {
-						this.InsertAt(key,  other_value,  my_timestamp);
-					}
-					
-					// Move this key's list node to the front. 
-					ListNode new_list_node = m_key_map.get(key);
-					m_sorted_keys.MoveFront(new_list_node);
 				}
-				else {
-					// Two cases: Either we are greater, in which case we can keep our changes. 
-					// or we're equal, in which case it's also safe to keep our changes. 
-					continue;
+				else { 	// Neither of them is a leaf node. 
+					if (comp != Comparison.GT) {
+						((ShMemObject)my_value).merge(other_value);
+					}
 				}
 			}
-			else {	// This means that we don't contain the key. 
-				
+			else {
 				// We need to create  new timestamp because it doesn't yet 
 				// exist. 
 				int[] new_timestamp = 
