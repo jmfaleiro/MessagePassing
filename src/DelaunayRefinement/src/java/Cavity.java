@@ -231,56 +231,8 @@ public class Cavity {
       unresolved_edges.put(edge, connections.get(edge));
       resolveEdges(new_element);
       
-      /*
-      unresolved_edges.put(edge, connections.get(edge));
       
-      graph.tryResolveEdges(new_element,  unresolved_edges);
-      */
-      
-      /*
-      int ne_connection;
-      if (pre.existsNode(conn.getNode(0))) {
-        ne_connection = conn.getNode(1);
-      } else {
-        ne_connection = conn.getNode(0);
-      }
-      
-      
-      
-      
-      int ne_connection = connections.get(edge);
-      
-      Element.Edge new_edge = new_element.getRelatedEdge(graph.getNodeData(ne_connection));
-      Element other = graph.getNodeData(ne_connection);
-      new_element.resolveNeighbor(other);
-      other.resolveNeighbor(new_element);
-      
-      
-      
-      // post.addEdge(graph.createEdge(ne_node, ne_connection, new_edge));
-      Collection<Integer> postnodes = (Collection<Integer>) post.getNodes().clone();
-      for (int node : postnodes) {
-        Element element = graph.getNodeData(node);
-        int related_index = element.isRelated(new_element);
-        if (related_index >= 0) {
-          element.setNeighbor(related_index,  new_element.getIndex());
-          related_index = new_element.isRelated(element);
-          new_element.setNeighbor(related_index,  element.getIndex());
-          // post.addEdge(graph.createEdge(ne_node, node, ele_edge));
-        }
-      }
-      */
       post.addNode(Element.getIndex(new_element), graph);
-    }
-    
-    for (int node : post.getNodes()) {
-    	ObjectNode elem = graph.getNodeData(node);
-    	int num_neighbors = 2*Element.getDim(elem) - 3;
-    	for (int i = 0; i < num_neighbors; ++i) {
-    		if (Element.getNeighbor(elem, i) == -1) {
-    			throw new Exception("Unresolved neighbor!");
-    		}
-    	}
     }
   }
 }

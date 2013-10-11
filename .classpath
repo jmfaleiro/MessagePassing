@@ -7,6 +7,5 @@
 	<classpathentry kind="lib" path="lib/twitter4j-core-3.0.3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang3-3.1.jar"/>
 	<classpathentry kind="lib" path="lib/jackson-all-1.8.10.jar"/>
-	<classpathentry kind="lib" path="lib/chronicle-1.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

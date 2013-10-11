@@ -42,7 +42,7 @@ public class SerialDelaunayrefinement {
     lasttime = Long.MAX_VALUE;
     mintime = Long.MAX_VALUE;
     run = 0;
-    while (((run < 1) || (Math.abs(lasttime - runtime) * 64 > Math.min(lasttime, runtime))) && (run < 1)) {
+    while (((run < 5) || (Math.abs(lasttime - runtime) * 64 > Math.min(lasttime, runtime))) && (run < 1)) {
       System.gc();
       System.gc();
       System.gc();
