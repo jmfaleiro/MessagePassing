@@ -42,14 +42,15 @@ public class SerialDelaunayrefinement {
     lasttime = Long.MAX_VALUE;
     mintime = Long.MAX_VALUE;
     run = 0;
-    while (((run < 5) || (Math.abs(lasttime - runtime) * 64 > Math.min(lasttime, runtime))) && (run < 1)) {
+    while (((run < 5) || (Math.abs(lasttime - runtime) * 64 > Math.min(lasttime, runtime))) && (run < 8)) {
       System.gc();
       System.gc();
       System.gc();
       System.gc();
       System.gc();
       runtime = run(args);
-      if (runtime < mintime)
+	  System.err.println("current runtime: " + runtime + " ms");
+      if (runtime < mintime) 
         mintime = runtime;
       run++;
     }
@@ -111,8 +112,14 @@ public class SerialDelaunayrefinement {
         
       }
     }
-    long time = Time.elapsedTime(id);
+    long time = Time.elapsedTime(id, true);
     System.err.println("runtime: " + time + " ms");
+
+	// Get rid of stale pointers so they can be cleaned by 
+	// the garbage collector. 
+	cavity = null;	
+	mesh = null;
+	worklist = null;
 
     /*
     if (isFirstRun && (args.length > 1)) {
