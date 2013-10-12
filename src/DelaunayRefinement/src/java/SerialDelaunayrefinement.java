@@ -26,10 +26,19 @@ package DelaunayRefinement.src.java;
 
 import common.util.Time;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Stack;
 
+import java.io.*;
 
+
+/*
+ * arg0: input file
+ * arg1: output folder
+ * arg2: number of runs
+ */
 public class SerialDelaunayrefinement {
 
   private static boolean isFirstRun = true;
@@ -37,18 +46,21 @@ public class SerialDelaunayrefinement {
 
   public static void main(String[] args) throws Exception {
     long runtime, lasttime, mintime, run;
-
+    long numruns = Integer.parseInt(args[1]);
     runtime = 0;
     lasttime = Long.MAX_VALUE;
     mintime = Long.MAX_VALUE;
     run = 0;
-    while (((run < 1) || (Math.abs(lasttime - runtime) * 64 > Math.min(lasttime, runtime))) && (run < 1)) {
+    List<Long> runtimes = new ArrayList<Long>((int)numruns);
+    
+    while (((run < numruns) || (Math.abs(lasttime - runtime) * 64 > Math.min(lasttime, runtime))) && (run < numruns)) {
       System.gc();
       System.gc();
       System.gc();
       System.gc();
       System.gc();
       runtime = run(args);
+      runtimes.add(runtime);
       if (runtime < mintime)
         mintime = runtime;
       run++;
@@ -57,6 +69,11 @@ public class SerialDelaunayrefinement {
     System.err.println("");
   }
 
+  public static void output_results(String output_folder, List<Long> output_values) {
+	  File folder_file = new File(output_folder);
+	  File output_file = new File(folder_file, "delaunay_shmem.txt");
+	  
+  }
 
   public static long run(String args[]) throws Exception{
     if (isFirstRun) {

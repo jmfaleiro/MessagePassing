@@ -5,6 +5,7 @@ import java.net.*;
 import java.io.*;
 
 import org.apache.commons.lang3.tuple.*;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -109,6 +110,67 @@ public class ShMem {
 		VectorTimestamp.IncrementLocal(ShMemObject.s_now);
 	}
 	
+	private static ArrayNode CopyArray(ArrayNode node) {
+		
+		// Create an empty ArrayNode to return, iterate through the 
+		// values in the ArrayNode.
+		ArrayNode ret = mapper.createArrayNode();
+		int num_vals = node.size();
+		for (int i = 0; i < num_vals; ++i) {
+			
+			// We only recurse if the value is an ObjectNode or an ArrayNode. 
+			JsonNode value = node.get(i);
+			if (value instanceof ObjectNode) {
+				value = CopyObject((ObjectNode)value);
+			}
+			else if (value instanceof ArrayNode) {
+				value = CopyArray((ArrayNode)value);
+			}
+			
+			// Add the copied value to the array node we wish to return. 
+			ret.add(value);
+		}
+		return ret;
+	}
+	
+	private static ObjectNode CopyObject(ObjectNode node) {
+		
+		// Create an object node to return and iterate through the key-value
+		// pairs of this object. 
+		ObjectNode ret = mapper.createObjectNode();
+		Iterator<Map.Entry<String, JsonNode>> iter = node.getFields();
+		while (iter.hasNext()) {
+			Map.Entry<String, JsonNode> kvp = iter.next();
+			
+			// We only need to recurse if the value is an ObjectNode or an ArrayNode
+			// because nodes of simple types are immutable. 
+			JsonNode to_add = kvp.getValue();
+			if (to_add instanceof ObjectNode) {
+				to_add = CopyObject((ObjectNode)kvp.getValue());
+			}
+			else if(to_add instanceof ArrayNode) {
+				to_add = CopyArray((ArrayNode)to_add);
+			}
+			
+			// Add the key-value pair to the object to return.
+			ret.put(kvp.getKey(), to_add);
+		}
+		return ret;
+	}
+	
+	public static ObjectNode AcquirePlain(int from) {
+		return deltas_.Pop(from);
+	}
+	
+	// Called by regular message passing applications. 
+	public static void ReleasePlain(ObjectNode to_send, int to) {
+		
+		// Make a deep copy of the object we want to release and put it in 
+		// the send queue. 
+		ObjectNode deep_copy = CopyObject(to_send);	
+		releaser_.Release(to,  deep_copy);
+	}
+	
 	// Called from the application. Release state to another process. 
 	// Releasing does not block, happens asynchronously in the background. 
 	public static void Release(int to) {
@@ -131,6 +193,7 @@ public class ShMem {
 		
 	}
 
+	
 	
 	//
 	// Populate the address book in memory with the addresses from disk. Boring
