@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <project name="Distributaries" default="initialize">
 
-<property name="src.dir" value="src" />
+<property name="src.dir" value="src/java" />
 <property name="build.dir" value="build"/>
-<property name="shmem.dir" value="${src.dir}/mp/java"/>
-<property name="archivist.dir" value="${src.dir}/archivist/kirigami/java"/>
+<property name="shmem.dir" value="${src.dir}/mp/"/>
+<property name="archivist.dir" value="${src.dir}/apps/archivist/kirigami/"/>
 <property name="common.dir" value="${src.dir}/common/util"/>
-<property name="delaunay.dir" value="${src.dir}/DelaunayRefinement/src/java"/>
+<property name="delaunay.dir" value="${src.dir}/apps/DelaunayRefinement/src/java"/>
 <property name="classes.dir" value="${build.dir}/classes"/>
 <property name="jar.dir" value="${build.dir}/jar"/>
 <property name="lib.dir" value="lib"/>
@@ -88,7 +88,7 @@
   <mkdir dir="${jar.dir}"/>
   <jar destfile="${jar.dir}/worker.jar" basedir="build/classes">
   <manifest>
-    <attribute name="Main-Class" value="DelaunayRefinement.src.java.DelaunayWorker"/>
+    <attribute name="Main-Class" value="apDelaunayRefinement.src.java.DelaunayWorker"/>
   </manifest>
   </jar>
 </target>
