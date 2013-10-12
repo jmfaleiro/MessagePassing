@@ -51,9 +51,11 @@ public class SerialDelaunayrefinement {
     lasttime = Long.MAX_VALUE;
     mintime = Long.MAX_VALUE;
     run = 0;
+
     List<Long> runtimes = new ArrayList<Long>((int)numruns);
     
     while (((run < numruns) || (Math.abs(lasttime - runtime) * 64 > Math.min(lasttime, runtime))) && (run < numruns)) {
+
       System.gc();
       System.gc();
       System.gc();
