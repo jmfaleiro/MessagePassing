@@ -1,0 +1,103 @@
+package apps.archivist.json;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.Iterator;
+import java.util.Map.Entry;
+
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.*;
+
+import mp.*;
+import mp.ShMemObject.MergeException;
+
+public class AppenderJson {
+	
+	private final ObjectNode m_attributes; 
+	
+	private final String m_input_file;
+	private final int m_batch_size;
+	private final int m_num_nodes;
+	
+	public AppenderJson(String input_file, int batch_size, int num_nodes) { 
+		m_input_file = input_file;
+		m_batch_size = batch_size;
+		m_num_nodes = num_nodes;
+		m_attributes = new ObjectMapper().createObjectNode();
+	}
+	
+	
+	public void ReleaseAll() {
+		for (int i = 1; i < m_num_nodes; ++i) {
+			ShMem.Release(i);
+		}
+	}
+	
+	public void DoMerge(String attribute, ObjectNode new_values) {
+		ObjectNode attribute_node = (ObjectNode)m_attributes.get(attribute); 
+		Iterator<Entry<String, JsonNode>> iter = new_values.getFields();
+		while (iter.hasNext()) {
+			Entry<String, JsonNode> kvp = iter.next();
+			attribute_node.put(kvp.getKey(), kvp.getValue());
+		}
+	}
+	
+	public void AcquireAll() {
+		for (int i = 1; i < m_num_nodes; ++i) {
+			try {
+				ShMem.Acquire(i);
+			}
+			catch (MergeException e) {
+				System.out.println("Didn't expect merge exception!");
+				System.exit(-1);
+			}
+		}
+	}
+	
+	public void Process() {
+		ObjectMapper mapper = new ObjectMapper();
+		ArrayNode epoch_tweets = mapper.createArrayNode();
+		
+		ShMem.s_state.put("search_term",  "manchester united");
+		ShMem.s_state.put("word-aggregate",  new ShMemObject());
+		try {
+			FileReader reader = new FileReader(m_input_file);
+	    	@SuppressWarnings("resource")
+			BufferedReader file = new BufferedReader(reader);
+	    	
+	    	String line = null;
+	    	while (true) {
+	    		
+		    	for (int i = 0; i < m_batch_size; ++i) {
+		    		line = file.readLine();
+		    		if (line == null) {
+		    			break;
+		    		}
+		    		epoch_tweets.add(mapper.readTree(line));
+		    	}
+		    	ShMem.s_state.put("tweets",  epoch_tweets);
+		    	AcquireAll();
+		    	ReleaseAll();
+		    	
+		    	if (line == null) {
+		    		break;
+		    	}
+	    	}
+	    	
+	    	AcquireAll();
+		}
+		catch(Exception e) {
+			e.printStackTrace(System.out);
+			System.exit(-1);
+		}
+	}
+	
+	
+	public static void main(String [] args)  {
+		ShMem.Init(Integer.parseInt(args[0]));
+		ShMem.Start();
+		AppenderJson blah = new AppenderJson(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+		blah.Process();
+	}
+}

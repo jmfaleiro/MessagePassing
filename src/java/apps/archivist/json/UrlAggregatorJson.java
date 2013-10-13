@@ -1,14 +1,16 @@
-package apps.archivist.kirigami;
+package apps.archivist.json;
 
 
 
 import java.util.*;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.*;
 
 import mp.*;
 
-public class UrlAggregator {
+public class UrlAggregatorJson {
 
 	private static List<String> get_urls(String tweet_text) {
 		
@@ -26,46 +28,47 @@ public class UrlAggregator {
 	
 	public static void process() {
 		
-		int next_tweet = 0;
-		String next_tweet_string;
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode vals = mapper.createObjectNode();
+		ObjectNode to_send = mapper.createObjectNode(); 
+		
+		HashSet<String> changed_keys = new HashSet<String>();
+		
 		while (true) {
 			
-			try {
-			ShMem.Acquire(0);
-			}
-			catch (ShMemObject.MergeException e) {
-				e.printStackTrace(System.err);
-				System.out.println("Merge failed!");
-				System.exit(-1);
-			}
-			
-			JsonNode tweets = ShMem.s_state.get("tweets");
-			ShMemObject vals = (ShMemObject)ShMem.s_state.get("url-aggregate");
+			JsonNode new_tweets = ShMem.AcquirePlain(0);
+			JsonNode tweets = new_tweets.get("tweets");
 			int num_tweets = tweets.size();
 			
-			while (next_tweet != num_tweets) {
-				next_tweet_string = String.valueOf(next_tweet);
-				JsonNode tweet = tweets.get(next_tweet_string);
+			for (int i = 0; i < num_tweets; ++i) {
+				JsonNode tweet = tweets.get(i);
 				String tweet_text = tweet.get("text").getTextValue().toUpperCase();
 				List<String> tweet_urls = get_urls(tweet_text);
+				
 				for (String url : tweet_urls) {
+					changed_keys.add(url);
 					JsonNode count_wrapper = vals.get(url);
 					if (count_wrapper != null) {
-						vals.put(url,  count_wrapper.getIntValue()+1);
+						vals.put(url, count_wrapper.getIntValue()+1);
 					}
 					else {
-						vals.put(url,  1);
+						vals.put(url, 1);
 					}
 				}
-				next_tweet += 1;
 			}
-			ShMem.Release(0);
+			
+			for (String key : changed_keys) {
+				to_send.put(key,  vals.get(key));
+			}
+			ShMem.ReleasePlain(to_send, 0);
+			to_send.removeAll();
+			changed_keys.clear();
 		}
 	}
 	
 	public static void main(String [] args) {
 		ShMem.Init(Integer.parseInt(args[0]));
 		ShMem.Start();
-		UrlAggregator.process();
+		UrlAggregatorJson.process();
 	}
 }

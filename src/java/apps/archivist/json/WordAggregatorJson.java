@@ -1,12 +1,14 @@
-package apps.archivist.kirigami;
+package apps.archivist.json;
 
 import java.util.*;
 
 import mp.*;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.*;
 
-public class WordAggregator {
+public class WordAggregatorJson {
 	
 	
 
@@ -32,6 +34,8 @@ public class WordAggregator {
     						   "who", "why", "will", "with", "word", "work", "world", "would", "write", 
     						   "year", "you", "your", "was" };
     
+    private static HashSet<String> s_changes = new HashSet<String>();
+    
     
     private static List<String> get_excludes(String search_term) {
     	
@@ -54,7 +58,7 @@ public class WordAggregator {
     }
     
     
-	private static void process_tweet(ShMemObject container, 
+	private static void process_tweet(ObjectNode container, 
 							   		  String tweet_text,
 							   		  List<String> exclude_words) {
     	
@@ -73,6 +77,7 @@ public class WordAggregator {
 				!tweet_pieces[i].startsWith("HTTP://")) {
 				
 				JsonNode count_wrapper = container.get(tweet_pieces[i]);
+				s_changes.add(tweet_pieces[i]);
 				if (count_wrapper != null) {
 					container.put(tweet_pieces[i],  count_wrapper.getIntValue()+1);
 				}
@@ -84,22 +89,22 @@ public class WordAggregator {
     }
 	
 	public static void process() {
+		
+		// Create a new mapper and an object node to hold aggregated values. 
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode vals = mapper.createObjectNode();
+		ObjectNode to_send = mapper.createObjectNode();
+		
 		List<String> exclude_words = null;
-		ShMem.Release(0);
+		ShMem.ReleasePlain(vals, 0);
 		while (true) {
 			
-			try {
-				ShMem.Acquire(0);
-			}
-			catch (ShMemObject.MergeException e) {
-				e.printStackTrace(System.err);
-				System.out.println("Merge failed!");
-				System.exit(-1);
-			}
+			// Get new tweets from the appender process. 
+			ObjectNode new_tweet_wrapper = ShMem.AcquirePlain(0);
+			ArrayNode tweets = (ArrayNode)new_tweet_wrapper.get("tweets");
+			int num_tweets = tweets.size();
+			String search_term = new_tweet_wrapper.get("search_term").getTextValue();
 			
-			String search_term = ShMem.s_state.get("search_term").getTextValue();
-			JsonNode tweets = ShMem.s_state.get("tweets");
-			ShMemObject vals = (ShMemObject)ShMem.s_state.get("word-aggregate");
 			if (exclude_words == null) {
 				exclude_words = get_excludes(search_term);
 			}
@@ -109,13 +114,20 @@ public class WordAggregator {
 				String tweet_text = tweet.get("text").getTextValue();
 				process_tweet(vals, tweet_text, exclude_words);
 			}
-			ShMem.Release(0);
+			
+			for (String key : s_changes) {
+				to_send.put(key,  vals.get(key));
+			}
+			
+			ShMem.ReleasePlain(to_send, 0);
+			s_changes.clear();
+			to_send.removeAll();
 		}
 	}
 	
 	public static void main(String [] args) {
 		ShMem.Init(Integer.parseInt(args[0]));
 		ShMem.Start();
-		WordAggregator.process();
+		WordAggregatorJson.process();
 	}
 }

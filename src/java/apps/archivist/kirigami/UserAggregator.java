@@ -11,6 +11,7 @@ public class UserAggregator {
 		int next_tweet = 0;
 		String next_tweet_string;
 		while (true) {
+			
 			try {
 				ShMem.Acquire(0);
 			}
