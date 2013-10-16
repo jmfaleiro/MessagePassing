@@ -3,6 +3,8 @@ from ShMemAcquirer import *
 from ShMemReleaser import *
 from timestamp_util import *
 from Queue import *
+import copy
+
 
 # Static fields:
 # s_addresses		-- Pairs of (IP, port) on which remote procs live.
@@ -74,6 +76,11 @@ class ShMem:
         
         Timestamp.LocalIncrement(ShMemObject.s_now)
         
+    # Acquire a python dictionary from a remote node. 
+    @staticmethod
+    def AcquirePlain(node):
+        return ShMem.s_receive_queues[node].get(True)
+
     # Merge s_state with the state we've received from a remote node. 
     @staticmethod
     def Acquire(node):
@@ -100,7 +107,15 @@ class ShMem:
                 ret[key] = ""
         return ret
             
-
+    
+    # Use this static method to release an object to a remote node. 
+    @staticmethod
+    def ReleasePlain(to_send, node):
+        
+        # Create a deep copy of the node to send. 
+        to_send_copy = copy.deepcopy(to_send)
+        ShMem.s_releaser.send(node, to_send)
+    
     # Release our diffs to another node. Put it in the send queue for the
     # ShMemReleaser thread to get to. 
     @staticmethod
