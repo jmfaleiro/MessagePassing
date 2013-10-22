@@ -1,3 +1,6 @@
+// Author: Jose Faleiro (faleiro.jose.manuel@gmail.com)
+//
+
 package apps.Auctions;
 
 public class Auction implements Request {
