@@ -11,16 +11,30 @@ import mp.*;
 //				\	close_time
 //				\ 	finished
 // 
-public class Auctions {
+public class RequestHandler {
 	
 	private final ShMemObject auction_state;
 	
-	public Auctions(int node_id) {
+	public RequestHandler(int node_id) {
 		ShMem.Init(node_id);
 		ShMem.Start();
 		ShMemObject auctions = new ShMemObject();
 		ShMem.s_state.put("auctions", auctions);
 		auction_state = auctions;
+	}
+	
+	private void HandleAuction(Auction cur_auction) {
+		
+		// Make sure that the current auction does not exist. 
+		String auction_id = cur_auction.m_auction_id;
+		
+		// For now, silently fail if the auction already exists. 
+		if (auction_state.get(auction_id) == null) {
+			ShMemObject new_auction = new ShMemObject();
+			new_auction.put("close_time",  cur_auction.m_close_time);
+			new_auction.put("finished", false);
+			auction_state.put(auction_id,  new_auction);
+		}
 	}
 	
 	private void HandleBid(Bid cur_bid) {
@@ -60,6 +74,7 @@ public class Auctions {
 			break;
 			
 		case NEW_AUCTION:
+			HandleAuction((Auction)req);
 			break;
 			default:
 		}
