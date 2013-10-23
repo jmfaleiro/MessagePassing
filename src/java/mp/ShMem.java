@@ -104,9 +104,9 @@ public class ShMem {
 		// - Change now_ appropriately.
 		// - Update last_sync_.
 		ObjectNode delta = deltas_.Pop(from);
-		s_state.merge(delta.get("value"));
 		VectorTimestamp.UnionWithSerialized(ShMemObject.s_now,  (ArrayNode)(delta.get("time")));
 		VectorTimestamp.UnionWithSerialized(since,  (ArrayNode)delta.get("time"));
+		s_state.merge(delta.get("value"), "");
 		VectorTimestamp.IncrementLocal(ShMemObject.s_now);
 	}
 	

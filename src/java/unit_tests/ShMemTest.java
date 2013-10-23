@@ -252,7 +252,7 @@ public class ShMemTest {
 		// The merge should fail. We're expecting a MergeException. 
 		Throwable expected_exception = null;
 		try {
-			ShMem.s_state.merge(name_object);
+			ShMem.s_state.merge(name_object, "");
 		}
 		catch (Exception ex) {
 			expected_exception = ex;
@@ -270,7 +270,7 @@ public class ShMemTest {
 		
 		// The merge should go through fine. 
 		try {
-			ShMem.s_state.merge(abc_node);
+			ShMem.s_state.merge(abc_node, "");
 		}
 		catch (Exception ex) {
 			expected_exception = ex;
@@ -288,7 +288,7 @@ public class ShMemTest {
 		name_value.put("shmem_timestamp", timestamp1);
 		expected_exception = null;
 		try {
-			ShMem.s_state.merge(name_object);
+			ShMem.s_state.merge(name_object, "");
 		}
 		catch (Exception e) {
 			expected_exception = e;

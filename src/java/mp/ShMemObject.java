@@ -5,11 +5,10 @@ import mp.ITimestamp.Comparison;
 
 import org.codehaus.jackson.*;
 import org.codehaus.jackson.node.*;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.ObjectNode;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.*;
 
 import org.apache.commons.lang3.tuple.*;
 
@@ -37,6 +36,8 @@ public class ShMemObject extends ObjectNode {
 	
 	// Index of the current node in the timestamps. 
 	public static int cur_node_;
+	
+	private static Map<Pattern, ConflictHandler> s_conflict_handlers;
 	
 	// Initialize an empty ShMemObject. 
 	public ShMemObject() {
@@ -381,7 +382,20 @@ public class ShMemObject extends ObjectNode {
 		}
 	}
 	
-	public void merge(JsonNode release) throws MergeException {
+	private ConflictHandler findHandler(String path) {
+		
+		// Check if any of the patterns match the given path, if so, return the handler,
+		// otherwise, return null.
+		for (Map.Entry<Pattern, ConflictHandler> kvp : s_conflict_handlers.entrySet()) {
+			Matcher match = kvp.getKey().matcher(path);
+			if (match.matches()) {
+				return kvp.getValue();
+			}
+		}
+		return null;
+	}
+	
+	public void merge(JsonNode release, String path) throws MergeException {
 		Iterator<Map.Entry<String,JsonNode>> fields = release.getFields();
 		
 		while (fields.hasNext()) {
@@ -393,7 +407,8 @@ public class ShMemObject extends ObjectNode {
 			
 			ListNode my_list_node = m_key_map.get(key);
 			
-			if (my_list_node != null) {
+			if (my_list_node != null) 
+			{
 				
 				int[] my_timestamp = my_list_node.m_timestamp;
 				
@@ -404,11 +419,20 @@ public class ShMemObject extends ObjectNode {
 						VectorTimestamp.CompareWithSerializedTS(my_timestamp,  
 																other_timestamp);
 				
+				
 				// If either one of these guys is a leaf, then this is the time that
 				// we have to check for conflicts. 
-				if (!(my_value instanceof ShMemObject) || (!other_value.isObject())) {
-					if (comp == Comparison.NONE) {
-						throw new MergeException("Merge exception!");
+				if (!(my_value instanceof ShMemObject) || (!other_value.isObject())) 
+				{
+					if (comp == Comparison.NONE) 
+					{
+						ConflictHandler handler = findHandler(path + ":" + key);
+						if (handler == null) {
+							throw new MergeException("Merge exception!");
+						}	
+						else {
+							handler.Resolve(this,  release, key);
+						}
 					}
 					if (comp == Comparison.LT) {
 						int[] new_timestamp = VectorTimestamp.CopySerialized(other_timestamp);
@@ -425,7 +449,13 @@ public class ShMemObject extends ObjectNode {
 				}
 				else { 	// Neither of them is a leaf node. 
 					if (comp != Comparison.GT) {
-						((ShMemObject)my_value).merge(other_value);
+						ConflictHandler handler = findHandler(path + ":" + key);
+						if (handler == null) {
+							throw new MergeException("Merge exception!");
+						}
+						else {
+							handler.Resolve(this,  release, key);
+						}
 					}
 				}
 			}
